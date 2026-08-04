@@ -1,11 +1,14 @@
 # Nope-Mode — Build Plan
 
-Ten workstreams in dependency order. Each lands with its tests passing.
+Eleven workstreams in dependency order. Each lands with its tests passing.
 Spec: [design.md](design.md).
 
 WS1 and WS4 are done and live on the device. **WS3 is the highest-risk
 remaining workstream** — pure JVM, no Android dependencies, build it against
 tests first and in isolation.
+
+WS11 (Quiet Ringer) is independent of WS5/WS9 — it uses a different platform
+mechanism and can be built in parallel with the enforcement work.
 
 ---
 
@@ -142,6 +145,33 @@ paused dialog; releasing restores it fully. **Verify on SDK 37** (design §16).
 - [ ] Import validates and rejects malformed input without corrupting state
 
 **Gate:** export → wipe data → import restores blocked apps and schedules.
+
+## WS11 — Quiet Ringer (R9)
+
+- [ ] `RingerPolicy`: create the `AutomaticZenRule` once, persist its id
+- [ ] `ZenPolicy` — calls from **starred contacts only**
+- [ ] **Repeat callers** allowed per user toggle (built-in DND category, not
+      hand-rolled). Default **on**
+- [ ] Rule state driven by the same derived `isActive` inside `reconcile()` —
+      no second scheduler
+- [ ] `ACCESS_NOTIFICATION_POLICY` grant flow; **loud warning on Home when not
+      granted** — a silently inert Quiet Ringer is the worst outcome (R8)
+- [ ] `removeAutomaticZenRule` on teardown so an uninstall can't strand the
+      phone permanently quiet
+- [ ] Never write global DND state; own only this rule
+- [ ] Warn once at setup if the user has **no starred contacts** (means nothing
+      rings — plausible mistake, not necessarily intent)
+- [ ] Settings: Quiet Ringer master toggle, repeat-callers toggle — editable
+      only while inactive
+
+**Gate:** with Nope-Mode active, a call from a non-starred number does not ring;
+a starred contact does; toggling repeat callers changes the second-call
+behaviour. Revoking DND access surfaces a visible warning.
+
+> The zen rule governs **the ringer only**. It must never be used to silence app
+> notifications generally — the blocked-app list already does that via
+> suspension, and widening the rule would quiet apps the user never selected
+> (design §18.1).
 
 ---
 
