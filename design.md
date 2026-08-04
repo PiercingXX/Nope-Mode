@@ -1,178 +1,222 @@
 # Nope-Mode — Design Specification
 
 Android app for GrapheneOS. Selected apps go silent and un-openable, on a
-schedule or on demand. A cleanroom equivalent of Google's Focus Mode, which
-does not exist on GrapheneOS because Digital Wellbeing is not shipped.
+schedule or on demand.
 
-**Status:** specification. No code written yet.
-**Target device:** Pixel 9 Pro (`caiman`), GrapheneOS, Android 17 / SDK 37.
+A cleanroom equivalent of Google's Focus Mode, which does not exist on
+GrapheneOS because Digital Wellbeing is not shipped and cannot be installed
+from Play.
+
+**Status:** WS1 and WS4 landed. WS2, WS3, WS5–WS10 unbuilt.
+**Target:** Pixel 9 Pro (`caiman`), GrapheneOS, Android 17 / SDK 37.
+**Provisioned:** device owner is live on the target device as of 2026-08-03.
 
 ---
 
-## 1. What it does
+## 1. Cleanroom provenance
 
-- Maintain a user-selected list of **blocked apps**.
-- When Nope-Mode is **active**, every blocked app is: no notifications, no
-  sound, no vibration, and **cannot be opened**.
-- Activation is either **manual** (toggle / quick-settings tile) or
-  **scheduled**.
-- **Default schedule: 20:00 → 08:00, every day.** Ships enabled.
-- Deactivation restores every blocked app to exactly its prior state.
+This repository is **all rights reserved**. Every close prior art is
+**GPL-3.0**. Copying from them would force this project to GPL.
+
+**What was studied:** F-Droid listings, README files, published feature
+descriptions, user-facing behavior, and official Android API documentation.
+
+**What was never opened:** the source code of Hail, NotiFilter, DetoxDroid,
+Curbox Detox, or Open TimeLimit.
+
+Behavioral *ideas* are not copyrightable; expression is. What follows is
+derived from documented behavior and the public Android SDK. Anyone extending
+this project must hold the same line: **read their docs, never their source.**
+
+### Prior art and what each contributed
+
+| Project | License | What was taken (behavior only) |
+|---|---|---|
+| Google Focus Mode | proprietary | The target behavior itself: pick distracting apps, pause them, schedule it, and offer a **bounded** "take a break" (5/15/30 min). Grayed-out icons as the paused signal. |
+| [Hail](https://github.com/aistra0528/Hail) | GPL-3.0 | Confirmation that suspend-based freezing is the right mechanism, and that disable/hide/suspend are meaningfully different. |
+| [NotiFilter](https://github.com/BURG3R5/NotiFilter) | GPL-3.0 | That notification-listener filtering is viable as a fallback, and that scheduling windows belong on the filter itself. |
+| [DetoxDroid](https://f-droid.org/packages/com.flx_apps.digitaldetox/) | GPL-3.0 | **"Protection always on"** — you pause deliberately, it auto-resumes, and there is a *minimum interval between pauses*. This is the single most important behavioral idea in the whole design (§11). |
+| [Curbox Detox](https://f-droid.org/packages/neth.iecal.curbox/) | FOSS | Graduated bypass resistance: strict / timed / per-attempt / challenge / capped attempt counts. |
+
+---
+
+## 2. Requirements
+
+**R1.** Maintain a user-selected list of blocked apps.
+**R2.** When active, blocked apps emit no notification, no sound, no vibration.
+**R3.** When active, blocked apps cannot be opened.
+**R4.** Activate manually, from a quick-settings tile, or on a schedule.
+**R5.** Ship with a default schedule of **20:00 → 08:00, every day**, enabled.
+**R6.** Deactivating restores every app to exactly its prior state.
+**R7.** Survive reboots, including a reboot in the middle of a window.
+**R8.** Never silently under-enforce. If a block fails, say so.
 
 ### Non-goals
 
-- No usage analytics, screen-time charts, or streaks.
-- No per-app time budgets ("30 min of Discord/day"). Nope-Mode is binary.
-- No parental controls, no remote administration, no accounts, no network.
-- No blocking of websites or notification *content* filtering by keyword.
-- Nothing leaves the device. The app requires no network permission at all.
+- Usage analytics, screen-time charts, streaks, leaderboards.
+- Per-app time budgets. Nope-Mode is binary: blocked or not.
+- Website or URL blocking, keyword filtering of notification content.
+- Grayscale, doomscroll detection, Extra Dim. (DetoxDroid does these; they are
+  a different product.)
+- Parental controls, remote administration, accounts, telemetry.
+- **Any network access whatsoever.** The app declares no `INTERNET` permission
+  and must never gain one.
 
 ---
 
-## 2. Decisions
-
-Recorded because each has consequences a reader will otherwise re-litigate.
+## 3. Decisions
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | **Device owner is the primary enforcement mechanism** | `setPackagesSuspended` is the only no-root API that makes an app truly silent *and* un-openable, and it survives reboots. Shizuku was rejected: it must be re-armed after every reboot, which silently breaks an unattended overnight schedule. |
-| D2 | **NotificationListener + Accessibility is the fallback tier** | Works with zero provisioning on any device. Strictly weaker (see §4.2) but means the app is never useless. |
-| D3 | **Blocked apps are un-openable, not just silent** | Full Focus Mode parity, as specified. Note this is a superset of "no noise/no notifications" — suspension delivers both in one call. |
-| D4 | **Kotlin + Views, no Compose** | Matches PiercingXX-Launcher exactly (AGP 8.5.0, Kotlin 1.9.24, viewBinding, Room + kapt, Gson, coroutines, compileSdk 34 / minSdk 24 / targetSdk 34). |
-| D5 | **Public repo, all rights reserved** | Matches PiercingXX-Launcher. Consequence: **no code may be copied from Hail, NotiFilter, or DetoxDroid — all are GPL-3.0.** Cleanroom only; read their docs, not their source. |
-| D6 | **Room for persistence, Gson for backup** | Same stack as the launcher, so backup/restore JSON conventions carry over. |
+| D1 | **Device owner is the primary enforcement mechanism** | `setPackagesSuspended` is the only no-root API delivering R2 *and* R3, and it survives reboots (R7). Shizuku was rejected: it must be re-armed after every reboot, silently breaking an unattended overnight schedule — precisely the failure the app exists to prevent. |
+| D2 | **Notification listener + accessibility is the fallback tier** | Zero provisioning, works anywhere. Strictly weaker (§8.2) but the app is never useless. |
+| D3 | **Blocked apps are un-openable, not merely silent** | Full Focus Mode parity. Suspension delivers R2 and R3 in one call, so this costs nothing extra. |
+| D4 | **Kotlin + Views, no Compose** | Matches PiercingXX-Launcher exactly. |
+| D5 | **Public repo, all rights reserved** | Matches the launcher. Consequence: cleanroom discipline per §1, permanently. |
+| D6 | **Room + Gson** | Same stack as the launcher, so backup JSON conventions carry over. |
+| D7 | **Breaks are always time-bounded** | An unbounded "off" turns a schedule into a suggestion. See §11. |
+| D8 | **State is derived, never accumulated** | A pure function of (now, schedules, override). Makes missed or duplicated alarms harmless. See §9. |
 
-### 2.1 Provisioning window — time-critical
+### 3.1 Device owner — the standing cost
 
-Device owner can **only** be set on a device with **no accounts added**. As of
-this writing the Pixel 9 Pro was freshly factory-reset and reports:
+Device owner is a full MDM role, and this is a real tradeoff, not a formality:
 
-```
-accounts        = 0
-Device Owner Type = -1   (none)
-```
-
-The window is open. It closes the moment a Google account (or any account) is
-added, and reopening it costs a **full factory reset**.
-
-Provisioning command, run once over ADB after the APK is installed:
-
-```sh
-adb shell dpm set-device-owner com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver
-```
-
-**Build and provision Nope-Mode before adding any accounts to the phone.**
-
-### 2.2 Device owner — what it costs
-
-Not free. Document these in the README so the tradeoff is a choice, not a
-surprise:
-
-- Device owner is a full MDM role. Settings will show the device as managed.
-- **Some apps refuse to run on managed devices** — banking, some DRM video.
-  If a needed app breaks, the only fix is relinquishing device owner.
-- It cannot be removed by the user through Settings. Nope-Mode **must** expose
-  a "Relinquish device owner" action calling
-  `DevicePolicyManager.clearDeviceOwnerApp(packageName)`, or the only exit is a
-  factory reset. This is a hard requirement, not a nice-to-have.
-- Only one device owner can exist. Nope-Mode claims the slot for the life of
+- Settings will report the device as managed.
+- **Some apps refuse to run on managed devices** — banking, certain DRM video.
+- The user cannot remove it through Settings. Nope-Mode **must** expose
+  *Relinquish device owner* → `clearDeviceOwnerApp()`. Without it the only exit
+  is a factory reset. Implemented in WS4; do not remove it.
+- Only one device owner may exist. Nope-Mode holds that slot for the life of
   the install.
 
----
+### 3.2 Provisioning window (historical, now satisfied)
 
-## 3. Architecture
+Device owner can only be set on a device with **zero accounts**:
 
-```
-              ┌──────────────────────────────┐
-              │        NopeController        │  single source of truth:
-              │  (active? why? which apps?)  │  decides desired state
-              └───────────────┬──────────────┘
-                              │ applies via
-              ┌───────────────▼──────────────┐
-              │      Enforcer (interface)    │
-              └───────┬──────────────┬───────┘
-                      │              │
-        ┌─────────────▼───┐   ┌──────▼──────────────────┐
-        │ SuspendEnforcer │   │  FallbackEnforcer       │
-        │ (device owner)  │   │  listener + a11y        │
-        └─────────────────┘   └─────────────────────────┘
+```sh
+adb shell dpm set-device-owner \
+    com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver
 ```
 
-`NopeController` never talks to Android APIs directly. It computes *desired
-state* — "these packages should be blocked right now" — and hands it to
-whichever `Enforcer` is available. This keeps the scheduling logic unit-testable
-with no device.
-
-### 3.1 Enforcer selection
-
-At startup and whenever admin state changes:
-
-```
-if (devicePolicyManager.isDeviceOwnerApp(packageName)) SuspendEnforcer
-else FallbackEnforcer
-```
-
-Surface the active tier prominently in the UI. A user running the fallback tier
-must know their blocks are leakier.
+This was provisioned on 2026-08-03 after a factory reset. **It cost one wipe to
+learn that opening the Google apps first closes the window.** If device owner is
+ever relinquished, regaining it costs another full reset — treat it as
+non-renewable.
 
 ---
 
-## 4. Enforcement tiers
+## 4. Platform mechanics
 
-### 4.1 SuspendEnforcer (device owner) — primary
+Authoritative behavior of `DevicePolicyManager.setPackagesSuspended`, from
+Android documentation. The whole design rests on this, so it is quoted rather
+than paraphrased loosely.
+
+A suspended package:
+
+- cannot start activities;
+- has its **notifications hidden**;
+- does **not** appear in the recents / overview screen;
+- cannot show toasts, dialogs, or snackbars;
+- **cannot play audio or vibrate the device**;
+- shows a system "app is paused" dialog when tapped;
+- is **grayed out in the launcher**.
+
+That single call satisfies R2 and R3 completely. No notification listener, no
+accessibility service, no DND manipulation is required at this tier.
+
+### 4.1 Packages that cannot be suspended
+
+The platform refuses these outright. The picker must exclude them at
+**selection time**, not fail at enforcement time:
+
+- Device admins — **this includes Nope-Mode itself**
+- The **active launcher** (suspending it bricks the home screen)
+- The required **package installer**, **uninstaller**, and **verifier**
+- The **default dialer**
+- The **permission controller**
+
+Two more that the platform *permits* but which must be guarded anyway:
+
+- **The active input method.** Suspending the keyboard leaves the user unable
+  to type — including unable to type their way out. Hard-block it.
+- **The default SMS handler.** Permitted, and a legitimate choice for some, but
+  it silences 2FA codes. Require an explicit confirmation; never reachable via
+  bulk-select.
+
+`setPackagesSuspended` **returns the array of packages it could not suspend.**
+Never discard it (R8).
+
+---
+
+## 5. Architecture
+
+```
+        ┌────────────────────────────────────┐
+        │           NopeController           │  owns desired state
+        │  derive(now, schedules, override)  │  talks to no Android API
+        └──────────────────┬─────────────────┘
+                           │ desired: Set<packageName>
+        ┌──────────────────▼─────────────────┐
+        │         Enforcer (interface)       │
+        └────────┬──────────────────┬────────┘
+                 │                  │
+      ┌──────────▼──────┐   ┌───────▼─────────────────┐
+      │ SuspendEnforcer │   │    FallbackEnforcer     │
+      │  device owner   │   │  listener + a11y        │
+      └─────────────────┘   └─────────────────────────┘
+```
+
+`NopeController` computes *what should be true* and hands it to an `Enforcer`.
+It imports nothing from `android.*`. That is what makes the scheduling logic —
+the part that must be correct — testable on the JVM with no device.
+
+Tier selection, re-evaluated whenever admin state changes:
+
+```
+if (dpm.isDeviceOwnerApp(packageName)) SuspendEnforcer else FallbackEnforcer
+```
+
+The active tier must be **visible in the UI at all times**. A user on the
+fallback tier is getting weaker protection and has to know it (R8).
+
+---
+
+## 6. State model
+
+The heart of the app. Everything else is plumbing.
 
 ```kotlin
-dpm.setPackagesSuspended(adminComponent, packages, true)   // engage
-dpm.setPackagesSuspended(adminComponent, packages, false)  // release
+sealed interface Override {
+    data object None : Override
+    data class ForceOn(val until: Instant?) : Override   // null = indefinite
+    data class Break(val until: Instant) : Override      // ALWAYS bounded
+}
+
+fun isActive(now, schedules, override): Boolean = when (override) {
+    is Override.ForceOn -> override.until == null || now < override.until
+    is Override.Break   -> if (now < override.until) false
+                           else scheduleSaysActive(now, schedules)
+    Override.None       -> scheduleSaysActive(now, schedules)
+}
 ```
 
-Suspension gives all of the following in one call: notifications hidden, no
-sound or vibration, activities stopped, no toasts or dialogs, no audio
-playback, and a system "app is paused" dialog on launch attempt.
+| Override | Schedule | Result |
+|---|---|---|
+| `None` | inactive | inactive |
+| `None` | active | **active** |
+| `ForceOn(null)` | either | **active**, indefinitely |
+| `ForceOn(t)`, now < t | either | **active** |
+| `ForceOn(t)`, now ≥ t | — | expires → re-derive from schedule |
+| `Break(t)`, now < t | active | inactive (break running) |
+| `Break(t)`, now ≥ t | active | **active** — break expired, auto-resume |
 
-**Returns the packages it could *not* suspend.** Never ignore this array —
-surface failures in the UI.
-
-Packages that cannot be suspended, and must be filtered from the selectable
-list at the point of selection:
-
-- The current **default launcher / home app** (would brick the home screen).
-- **Nope-Mode itself.**
-- The active **input method** (would leave the user unable to type).
-- The **dialer / default SMS** handler — permitted by the API but a footgun;
-  require an explicit confirm, and never allow via bulk-select.
-- System-critical packages the platform refuses.
-
-### 4.2 FallbackEnforcer — no device owner
-
-Two cooperating pieces, both requiring a user-granted special access:
-
-**a) `NopeNotificationListener : NotificationListenerService`**
-`onNotificationPosted` → if package is blocked and mode is active, call
-`cancelNotification(sbn.key)`. Prefer `snoozeNotification(key, duration)` where
-it suits, as it suppresses re-post without a user-visible dismissal.
-
-> **Known limitation, must be stated in the UI:** the notification has already
-> been posted by the time the listener sees it, so the alert sound may play
-> before suppression. This tier delivers "notification disappears", not
-> "notification never made a sound". It is strictly inferior to suspension.
-
-**b) `NopeAccessibilityService : AccessibilityService`**
-On `TYPE_WINDOW_STATE_CHANGED`, read the foreground package; if blocked and
-active, launch `BlockedActivity` (a full-screen "Nope." interstitial) with
-`FLAG_ACTIVITY_NEW_TASK`. Debounce to avoid launch loops.
-
-Do **not** attempt `performGlobalAction(GLOBAL_ACTION_BACK)` as the blocking
-mechanism — it fights the user's navigation and behaves erratically across
-launchers.
+**`Break` has no unbounded variant, by construction.** There is no way to
+express "off until I say so". This is D7, and it is the difference between a
+schedule and a suggestion.
 
 ---
 
-## 5. Scheduling
-
-### 5.1 Model
-
-A schedule is a recurring daily window:
+## 7. Scheduling
 
 ```kotlin
 data class Schedule(
@@ -184,208 +228,289 @@ data class Schedule(
 )
 ```
 
-**Windows may cross midnight.** `end <= start` means the window wraps to the
-next day. The seeded default (1200 → 480) does exactly this, so the wrap case
-is the *common* path, not an edge case — test it first.
+**Windows cross midnight.** `end <= start` means the window wraps into the next
+day. The shipped default (1200 → 480) does exactly this, so **the wrap is the
+common path, not an edge case.** Test it first, before the non-wrapping case.
 
 `daysMask` refers to the day the window **starts**. A Friday-enabled 20:00→08:00
-window runs Friday 20:00 through Saturday 08:00.
+window runs Friday 20:00 through Saturday 08:00. A user unchecking Saturday
+expects Saturday *night* to be unblocked, not Saturday *morning* — say so in the
+UI, because both readings are defensible.
 
-### 5.2 Reconciliation, not event-chasing
-
-The controller must expose:
+### 7.1 Reconciliation, not event-chasing
 
 ```kotlin
 fun shouldBeActiveAt(now: LocalDateTime, schedules: List<Schedule>): Boolean
 ```
 
-— a pure function over the schedule set. **State is always derived by asking
-this function, never by accumulating alarm events.** Alarms only prompt a
-re-evaluation. This makes the system self-healing: a missed, duplicated, or
-late alarm cannot corrupt state.
+Pure. State is **always** obtained by calling this, never by accumulating alarm
+events (D8). Alarms merely prompt re-evaluation. A missed, late, or duplicated
+alarm therefore cannot corrupt state — the system is self-healing.
 
-Call `reconcile()` on: boot completed, alarm fired, app foregrounded, tile
-clicked, schedule edited, blocked-app list edited, time/timezone changed.
+`reconcile()` runs on: boot completed, alarm fired, app foregrounded, tile
+clicked, schedule edited, blocked-list edited, break started or expired,
+`TIME_SET`, `TIMEZONE_CHANGED`.
 
-### 5.3 Alarms
+### 7.2 Alarms
 
-- `AlarmManager.setExactAndAllowWhileIdle(RTC_WAKEUP, …)` for the next boundary
-  only — recompute and re-arm after each fire. Do not pre-schedule a chain.
-- Permission: `USE_EXACT_ALARM` (API 33+). Declare `SCHEDULE_EXACT_ALARM` as
-  well for the minSdk 24 range, and handle `canScheduleExactAlarms() == false`
-  by degrading to `setAndAllowWhileIdle` plus a visible warning.
+- `setExactAndAllowWhileIdle(RTC_WAKEUP, …)` for **the next boundary only**;
+  recompute and re-arm after each fire. Never pre-schedule a chain.
+- `USE_EXACT_ALARM` (API 33+), plus `SCHEDULE_EXACT_ALARM` for the minSdk 24
+  range. If `canScheduleExactAlarms()` is false, degrade to
+  `setAndAllowWhileIdle` **and show a persistent warning** — an inexact 20:00
+  boundary can drift by minutes, which is visible and wrong.
 - `RECEIVE_BOOT_COMPLETED` → re-arm and reconcile. Without this the schedule
-  dies at the first reboot, which is precisely the Shizuku failure mode D1
-  rejected.
-- Also register `ACTION_TIME_CHANGED` and `ACTION_TIMEZONE_CHANGED`.
-
-### 5.4 Manual override
-
-Manual and scheduled activation are separate inputs to one derived state:
-
-| `manualOverride` | Schedule says | Result |
-|---|---|---|
-| `None` | inactive | inactive |
-| `None` | active | **active** |
-| `ForceOn(until?)` | either | **active** |
-| `ForceOff(until)` | active | inactive until `until`, then reverts |
-
-`ForceOff` must be time-bounded — it expires at the end of the current window,
-so an early exit tonight cannot silently disable the schedule forever. This is
-the single most important behavioural guard in the app.
+  dies at the first reboot, which is exactly the Shizuku failure D1 rejected.
 
 ---
 
-## 6. Data model (Room)
+## 8. Enforcement tiers
+
+### 8.1 SuspendEnforcer — primary
+
+```kotlin
+dpm.setPackagesSuspended(admin, packages, true)   // engage
+dpm.setPackagesSuspended(admin, packages, false)  // release
+```
+
+Order of operations matters for crash safety:
+
+1. Write intended packages to `suspend_record`.
+2. Call `setPackagesSuspended(…, true)`.
+3. Inspect the returned failure array; record and surface any failures.
+
+Releasing reverses it: suspend-false first, then clear `suspend_record` only
+for packages that actually released.
+
+If the process dies between (1) and (2), reconcile-on-boot sees a record with
+nothing suspended and re-derives — harmless. If it dies between (2) and (3),
+the record is authoritative and the apps get released correctly. **Writing the
+record first is what makes a crash recoverable rather than stranding apps.**
+
+### 8.2 FallbackEnforcer — no device owner
+
+**a) `NopeNotificationListener : NotificationListenerService`**
+On `onNotificationPosted`, if the package is blocked and the mode is active,
+`cancelNotification(sbn.key)`; prefer `snoozeNotification(key, duration)` where
+it fits, since it suppresses re-post without a visible dismissal.
+
+> **Stated limitation, which must appear in the UI verbatim in spirit:** the
+> notification has already been posted when the listener sees it, so **the alert
+> sound may play before suppression**. This tier delivers "the notification goes
+> away", not "the notification never made a sound". It does not satisfy R2.
+
+**b) `NopeAccessibilityService : AccessibilityService`**
+On `TYPE_WINDOW_STATE_CHANGED`, read the foreground package; if blocked and
+active, launch `BlockedActivity` with `FLAG_ACTIVITY_NEW_TASK`. Debounce to
+avoid launch loops.
+
+Do **not** use `performGlobalAction(GLOBAL_ACTION_BACK)` as the block — it
+fights the user's navigation and behaves inconsistently across launchers.
+
+---
+
+## 9. Breaks and anti-bypass
+
+Adopted from DetoxDroid's "protection always on" and Curbox's graduated
+resistance. Without this, a schedule is decoration — at 2am the user simply
+turns it off.
+
+**Baseline (ship in WS7):**
+
+- **Take a break** offers **5 / 15 / 30 minutes**, matching Focus Mode. No
+  custom-duration field, no "until I turn it back on".
+- Breaks **auto-resume**. There is no user action required to re-engage.
+- A break shows a persistent countdown notification from Nope-Mode itself, so
+  it is never ambiguous whether protection is on.
+
+**Friction (WS7, configurable, default on):**
+
+- **Minimum interval between breaks** — default 30 minutes. Prevents chaining
+  5-minute breaks into an unbounded evening.
+- **Break budget** — default 3 per active window. Exhausted means exhausted.
+
+**Deferred, explicitly out of scope for v1:**
+
+- Typing a sentence, scanning a QR code, or a commitment password. These are
+  proven patterns (Curbox, DetoxDroid) but they are anti-features until the
+  basics are solid. Revisit only if the baseline proves too easy to defeat.
+
+Every friction setting must be **editable only while Nope-Mode is inactive.**
+Otherwise the 2am workaround is simply to raise the break budget.
+
+---
+
+## 10. Data model (Room)
 
 ```
 blocked_app      packageName TEXT PK, addedAt INTEGER
 schedule         id INTEGER PK, startMinuteOfDay INT, endMinuteOfDay INT,
                  daysMask INT, enabled INT
-app_state        id INTEGER PK (always 1), manualOverride TEXT,
-                 overrideUntil INTEGER NULL, lastReconcileAt INTEGER
+app_state        id INTEGER PK (=1), overrideKind TEXT, overrideUntil INTEGER NULL,
+                 lastReconcileAt INTEGER
 suspend_record   packageName TEXT PK, suspendedAt INTEGER
+break_log        id INTEGER PK, startedAt INTEGER, durationMinutes INT
 ```
 
-`suspend_record` is the crash-safety net: it records what Nope-Mode actually
-suspended. On boot, any package present there but no longer scheduled to be
-blocked gets un-suspended. Without this table, a crash mid-activation can leave
-apps permanently suspended with no UI to recover them.
+- `suspend_record` — crash safety net (§8.1). On boot, anything present here
+  but no longer scheduled to be blocked is released. Without this table a crash
+  mid-activation can leave apps permanently suspended with no UI to recover them.
+- `break_log` — enforces minimum interval and break budget (§9).
 
-Seed migration inserts the default schedule (1200, 480, all days, enabled).
-
----
-
-## 7. UI
-
-Four screens, Views + viewBinding, Material 3, matching the launcher's
-AMOLED-black monochrome aesthetic.
-
-1. **Home** — big active/inactive state, current reason ("scheduled until
-   08:00"), master toggle, count of blocked apps, enforcement-tier badge
-   (`Device owner` / `Limited`).
-2. **Blocked apps** — searchable list of launchable packages, checkboxes, app
-   icons. Non-suspendable packages (§4.1) shown disabled with a reason.
-3. **Schedules** — list, edit, add, delete. Default row pre-seeded. Time
-   pickers plus a day-of-week selector.
-4. **Setup / status** — enforcement tier, provisioning instructions with the
-   `dpm` command, permission grants for the fallback tier, and the
-   **Relinquish device owner** action (§2.2).
-
-### 7.1 Quick Settings tile
-
-`NopeTileService : TileService` — toggles `ForceOn` / clears override. This
-replaces the dead Digital Wellbeing Focus Mode tile in the user's shade layout.
-Keep the tile label in sync with derived state, including when changed
-elsewhere (`requestListeningState`).
+Seed migration inserts the default schedule `(1200, 480, all days, enabled)`.
 
 ---
 
-## 8. Manifest essentials
+## 11. UI
+
+Five screens. Views + viewBinding, AMOLED-black monochrome, matching the
+launcher.
+
+1. **Home** — large active/inactive state; the *reason* ("scheduled until
+   08:00", "break, 12 min left"); master toggle; **Take a break** button when
+   active; blocked-app count; **enforcement-tier badge**.
+2. **Blocked apps** — searchable list of launchable packages with icons and
+   checkboxes. Packages from §4.1 shown disabled **with the reason inline** —
+   not silently absent, or the user assumes it's blocked when it isn't.
+3. **Schedules** — list, add, edit, delete. Time pickers plus day-of-week
+   selector. Default row pre-seeded. Show the wrap explicitly: *"20:00 tonight
+   → 08:00 tomorrow"*.
+4. **Settings** — break duration options, minimum interval, break budget.
+   **Locked while active** (§9).
+5. **Setup / status** — tier, provisioning command, fallback permission grants,
+   and **Relinquish device owner** with a plain-language warning.
+
+`BlockedActivity` — the fallback tier's full-screen interstitial. One word,
+*Nope.*, the app name, and when the block lifts.
+
+### 11.1 Quick Settings tile
+
+`NopeTileService : TileService` — toggles `ForceOn` / clears it. Label and state
+must track derived state even when changed elsewhere
+(`requestListeningState`).
+
+On the target device this tile replaces the dead Digital Wellbeing Focus Mode
+tile, which cannot work on GrapheneOS. Note the shade layout **cannot be set
+programmatically on Android 17** — `sysui_qs_tiles` is vestigial and the real
+storage is root-only — so tile placement is always a manual user step. Do not
+waste effort automating it.
+
+---
+
+## 12. Manifest
 
 ```xml
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
 <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 <!-- deliberately NO android.permission.INTERNET -->
 ```
 
-- `NopeDeviceAdminReceiver : DeviceAdminReceiver` with
-  `<meta-data android:name="android.app.device_admin">` → `res/xml/device_admin.xml`.
-- `NopeNotificationListener` with `BIND_NOTIFICATION_LISTENER_SERVICE`.
-- `NopeAccessibilityService` with `BIND_ACCESSIBILITY_SERVICE`.
-- `NopeTileService` with `BIND_QUICK_SETTINGS_TILE`.
-- `BootReceiver` for `BOOT_COMPLETED`, `TIME_SET`, `TIMEZONE_CHANGED`.
+Components: `NopeDeviceAdminReceiver` (+ `res/xml/device_admin.xml`),
+`NopeNotificationListener`, `NopeAccessibilityService`, `NopeTileService`,
+`BootReceiver` (`BOOT_COMPLETED`, `TIME_SET`, `TIMEZONE_CHANGED`).
 
-Omitting `INTERNET` is a deliberate, verifiable privacy claim — keep it true.
+`POST_NOTIFICATIONS` is for Nope-Mode's own break countdown only.
+
+The absent `INTERNET` permission is a verifiable privacy claim. Keep it true;
+it is checkable with `aapt2 dump permissions`.
 
 ---
 
-## 9. Package layout
+## 13. Package layout
 
 ```
 com.piercingxx.nopemode
-├── admin/          NopeDeviceAdminReceiver, DeviceOwnerManager
-├── core/           NopeController, ScheduleEvaluator, ManualOverride
-├── enforce/        Enforcer, SuspendEnforcer, FallbackEnforcer
-├── data/           Room entities, DAOs, NopeDatabase, BackupJson
-├── schedule/       AlarmScheduler, BootReceiver
-├── service/        NopeNotificationListener, NopeAccessibilityService,
-│                   NopeTileService
-└── ui/             HomeActivity, BlockedAppsActivity, SchedulesActivity,
-                    SetupActivity, BlockedActivity
+├── admin/      NopeDeviceAdminReceiver, DeviceOwnerManager          [WS4 done]
+├── core/       NopeController, ScheduleEvaluator, Override, BreakPolicy
+├── enforce/    Enforcer, SuspendEnforcer, FallbackEnforcer
+├── data/       entities, DAOs, NopeDatabase, BackupJson
+├── schedule/   AlarmScheduler, BootReceiver
+├── service/    NopeNotificationListener, NopeAccessibilityService,
+│               NopeTileService
+└── ui/         HomeActivity, BlockedAppsActivity, SchedulesActivity,
+                SettingsActivity, SetupActivity, BlockedActivity
 ```
 
 ---
 
-## 10. Failure modes
+## 14. Failure modes
 
 | Scenario | Required behaviour |
 |---|---|
-| App crashes while apps are suspended | `suspend_record` + boot reconcile restores them |
+| Crash while apps suspended | `suspend_record` + boot reconcile releases them |
 | Reboot mid-window | `BootReceiver` reconciles; apps re-suspend |
-| Exact alarm permission denied | Degrade to inexact, warn visibly, keep reconciling on foreground |
-| User selects their own launcher | Blocked at selection time, not at suspend time |
-| `setPackagesSuspended` returns failures | Show which apps failed and why; never claim success |
-| Device owner relinquished while active | Un-suspend everything first, then drop to fallback tier |
+| Exact alarm permission denied | Degrade to inexact, warn persistently, keep reconciling |
+| User selects own launcher / IME | Blocked at selection time with an inline reason |
+| `setPackagesSuspended` returns failures | Name the apps that failed; never report success (R8) |
+| Device owner relinquished while active | Release everything **first**, then drop to fallback |
 | Blocked app uninstalled | Prune from `blocked_app` and `suspend_record` on reconcile |
 | Schedule edited mid-window | Reconcile immediately; may deactivate instantly |
-| DST shift inside a window | Minute-of-day comparison on local time; test the 02:00 jump |
+| DST shift inside a window | Compare minute-of-day on local time; test the 02:00 jump |
+| Break spans the window end | Break expires, schedule already over → stays inactive |
+| Clock moved backwards | `Break.until` in the future by more than max duration → cancel the break |
 
 ---
 
-## 11. Testing
+## 15. Testing
 
-Pure-JVM unit tests carry the weight. `ScheduleEvaluator` has no Android
-dependency by design.
+`ScheduleEvaluator` and the override model are pure JVM by design. They carry
+the weight.
 
-- `shouldBeActiveAt` across: normal window, **midnight-crossing window**
-  (the default), day-mask boundaries, DST spring-forward and fall-back, exact
-  boundary minutes (20:00:00 and 08:00:00).
-- `ManualOverride` truth table (§5.4), including `ForceOff` expiry.
+- `shouldBeActiveAt`: normal window; **midnight-crossing window (the default)**;
+  exact boundary minutes 20:00:00 and 08:00:00; day-mask boundaries across the
+  wrap; DST spring-forward and fall-back inside a window.
+- Full override truth table (§6), including `ForceOn` and `Break` expiry, and
+  the clock-moved-backwards guard.
+- `BreakPolicy`: minimum interval, budget exhaustion, budget reset at window end.
 - Backup JSON round-trip.
-- Instrumented: Room migrations, `suspend_record` recovery after simulated
-  crash.
+- Instrumented: Room migrations; `suspend_record` recovery after a simulated
+  crash; a real suspend/release cycle on-device.
 
-Gate: no workstream is complete while its tests fail.
+**A workstream with failing tests is not done.**
 
 ---
 
-## 12. Build
-
-Mirror PiercingXX-Launcher exactly:
+## 16. Build
 
 ```
 AGP 8.5.0 · Kotlin 1.9.24 · compileSdk 34 · minSdk 24 · targetSdk 34
 Java/jvmTarget 1.8 · viewBinding · buildConfig
 appcompat 1.6.1 · constraintlayout 2.1.4 · material 1.11.0 · preference 1.2.1
-room 2.6.1 (+ kapt compiler, room-ktx) · gson 2.10.1 · coroutines 1.7.3
+room 2.6.1 (+kapt, room-ktx) · gson 2.10.1 · coroutines 1.7.3
 junit 4.13.2 · org.json 20231013 (test) · espresso 3.5.1
 ```
 
-`applicationId` / `namespace`: `com.piercingxx.nopemode`.
-Debug keystore checked in, matching the launcher, so sideloads keep one
-signing identity.
+`applicationId` / `namespace`: `com.piercingxx.nopemode`. Debug keystore shared
+with the launcher so sideloads keep one signing identity.
 
-> `compileSdk 34` against a device on SDK 37 is fine — but
-> `setPackagesSuspended` behaviour should be verified on-device early, since
-> the target device is three API levels ahead of the compile target.
+> `compileSdk 34` against a device on **SDK 37** is intentional (it matches the
+> launcher) but means three API levels of untested drift. Verify
+> `setPackagesSuspended` behavior on-device in WS5 before building UI on top
+> of it.
 
 ---
 
-## 13. Build order
+## 17. Build order
 
-1. **Skeleton** — gradle, manifest, package layout, empty activities. Builds and installs.
-2. **Data** — Room entities, DAOs, seed migration with the default 20:00→08:00 schedule. Unit tests.
-3. **Core** — `ScheduleEvaluator` + `ManualOverride`. Pure JVM, fully tested. *No Android APIs.*
-4. **Device owner** — `NopeDeviceAdminReceiver`, provisioning detection, relinquish action. **Provision on the phone here, before any account is added.**
-5. **SuspendEnforcer** — `setPackagesSuspended`, `suspend_record`, failure surfacing.
-6. **Scheduling** — `AlarmScheduler`, `BootReceiver`, reconcile-on-everything.
-7. **UI** — four screens.
-8. **QS tile** — then place it in the shade where the Focus Mode tile used to sit.
-9. **FallbackEnforcer** — listener + accessibility. Last, because it is the degraded path.
-10. **Backup/restore** — Gson JSON, matching launcher conventions.
+| WS | Scope | State |
+|---|---|---|
+| 1 | Skeleton — gradle, manifest, packages, icon | **done** |
+| 4 | Device admin receiver, `DeviceOwnerManager`, relinquish | **done, provisioned** |
+| 2 | Room entities, DAOs, seed migration | next |
+| 3 | `ScheduleEvaluator`, `Override`, `BreakPolicy` — pure JVM, fully tested | next |
+| 5 | `SuspendEnforcer`, `suspend_record`, failure surfacing | |
+| 6 | `AlarmScheduler`, `BootReceiver`, reconcile-on-everything | |
+| 7 | UI, five screens, break friction | |
+| 8 | QS tile | |
+| 9 | `FallbackEnforcer` — listener + accessibility | |
+| 10 | Gson backup/restore | |
 
-Workstreams 1–6 produce a headless but fully functional app. UI is deliberately
-late; the scheduling logic is the part that must be right.
+WS1–6 produce a fully functional headless app. UI is deliberately late: the
+scheduling logic is the part that has to be right, and it is the part that can
+be proven correct without a device.
+
+WS3 is the highest-risk workstream and has no Android dependencies — build it
+against tests first, in isolation.
