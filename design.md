@@ -7,7 +7,7 @@ A cleanroom equivalent of Google's Focus Mode, which does not exist on
 GrapheneOS because Digital Wellbeing is not shipped and cannot be installed
 from Play.
 
-**Status:** WS1 and WS4 landed. WS2, WS3, WS5–WS10 unbuilt.
+**Status:** WS1 and WS4 landed. WS2, WS3, WS5–WS11 unbuilt.
 **Target:** Pixel 9 Pro (`caiman`), GrapheneOS, Android 17 / SDK 37.
 **Provisioned:** device owner is live on the target device as of 2026-08-03.
 
@@ -35,7 +35,7 @@ this project must hold the same line: **read their docs, never their source.**
 | Google Focus Mode | proprietary | The target behavior itself: pick distracting apps, pause them, schedule it, and offer a **bounded** "take a break" (5/15/30 min). Grayed-out icons as the paused signal. |
 | [Hail](https://github.com/aistra0528/Hail) | GPL-3.0 | Confirmation that suspend-based freezing is the right mechanism, and that disable/hide/suspend are meaningfully different. |
 | [NotiFilter](https://github.com/BURG3R5/NotiFilter) | GPL-3.0 | That notification-listener filtering is viable as a fallback, and that scheduling windows belong on the filter itself. |
-| [DetoxDroid](https://f-droid.org/packages/com.flx_apps.digitaldetox/) | GPL-3.0 | **"Protection always on"** — you pause deliberately, it auto-resumes, and there is a *minimum interval between pauses*. This is the single most important behavioral idea in the whole design (§11). |
+| [DetoxDroid](https://f-droid.org/packages/com.flx_apps.digitaldetox/) | GPL-3.0 | **"Protection always on"** — you pause deliberately, it auto-resumes, and there is a *minimum interval between pauses*. This is the single most important behavioral idea in the whole design (§9). |
 | [Curbox Detox](https://f-droid.org/packages/neth.iecal.curbox/) | FOSS | Graduated bypass resistance: strict / timed / per-attempt / challenge / capped attempt counts. |
 
 ---
@@ -50,6 +50,8 @@ this project must hold the same line: **read their docs, never their source.**
 **R6.** Deactivating restores every app to exactly its prior state.
 **R7.** Survive reboots, including a reboot in the middle of a window.
 **R8.** Never silently under-enforce. If a block fails, say so.
+**R9.** While active, the phone must not ring except for **starred contacts**,
+plus **repeat callers** when that toggle is on. See §18.
 
 ### Non-goals
 
@@ -74,8 +76,8 @@ this project must hold the same line: **read their docs, never their source.**
 | D4 | **Kotlin + Views, no Compose** | Matches PiercingXX-Launcher exactly. |
 | D5 | **Public repo, all rights reserved** | Matches the launcher. Consequence: cleanroom discipline per §1, permanently. |
 | D6 | **Room + Gson** | Same stack as the launcher, so backup JSON conventions carry over. |
-| D7 | **Breaks are always time-bounded** | An unbounded "off" turns a schedule into a suggestion. See §11. |
-| D8 | **State is derived, never accumulated** | A pure function of (now, schedules, override). Makes missed or duplicated alarms harmless. See §9. |
+| D7 | **Breaks are always time-bounded** | An unbounded "off" turns a schedule into a suggestion. See §9. |
+| D8 | **State is derived, never accumulated** | A pure function of (now, schedules, override). Makes missed or duplicated alarms harmless. See §6. |
 
 ### 3.1 Device owner — the standing cost
 
@@ -514,3 +516,97 @@ be proven correct without a device.
 
 WS3 is the highest-risk workstream and has no Android dependencies — build it
 against tests first, in isolation.
+
+---
+
+## 18. Ringer policy — "Quiet Ringer" (R9)
+
+App suspension cannot silence the phone. The dialer is one of the packages the
+platform refuses to suspend (§4.1), and correctly so. Calls therefore need a
+second, independent mechanism.
+
+### 18.1 Scope — why this is calls-only
+
+DND cannot be scoped to a set of apps. `ZenPolicy` is a **global** interruption
+filter with category-level exceptions; there is no API to apply it to five
+chosen packages.
+
+That is fine, because **the blocked-app list already silences the apps it
+covers** — a suspended app cannot post a notification, play audio, or vibrate
+(§4). Nothing about the ringer is needed to achieve that.
+
+So the division of labour is:
+
+| Concern | Mechanism | Scope |
+|---|---|---|
+| Selected apps go silent and un-openable | `setPackagesSuspended` | the checkbox list |
+| Phone must not ring | `AutomaticZenRule` | the ringer, which is global by nature |
+
+The zen rule **must not** be used to silence app notifications generally. Doing
+so would quiet apps the user never selected, breaking the app's central promise
+that it only touches what you picked.
+
+### 18.2 Mechanism
+
+`AutomaticZenRule` (API 24+), owned by Nope-Mode, with a `ZenPolicy` that
+overrides global policy only while the rule is active.
+
+```
+permission : android.permission.ACCESS_NOTIFICATION_POLICY
+             (user grant: Settings → Do Not Disturb access)
+
+create once : NotificationManager.addAutomaticZenRule(rule) -> id, persisted
+activate    : setAutomaticZenRuleState(id, Condition.STATE_TRUE)
+deactivate  : setAutomaticZenRuleState(id, Condition.STATE_FALSE)
+```
+
+`ZenPolicy`:
+
+- **Calls:** allowed from **starred contacts only**.
+- **Repeat callers:** allowed iff the user toggle is on. This is a built-in
+  DND category, not something Nope-Mode implements — a second call from the
+  same number inside the platform's window rings through.
+- Everything else in the policy is left at its default. The rule exists to
+  restrict the ringer, not to become a general notification filter (§18.1).
+
+Rule state is driven by the **same derived `isActive`** as everything else
+(§6). It is set inside `reconcile()`; there is no separate scheduler.
+
+### 18.3 Why starred contacts rather than an in-app list
+
+`CallScreeningService` + `ROLE_CALL_SCREENING` would allow an arbitrary
+per-number whitelist, and was rejected:
+
+- It is bound **before the device rings** and must respond within **5 seconds**
+  or the platform times out — a slow or crashed lookup delays or drops a real
+  call.
+- Only one app can hold the role, so it would collide with any spam-blocking
+  app.
+- Repeat-caller logic would become ours to write and test, instead of being a
+  platform guarantee.
+
+Starred contacts is a whitelist that already exists, is edited in Contacts, is
+a single source of truth across the whole system, and cannot make the phone
+fail to ring because of a bug in this app. Revisit only if starring proves too
+coarse in real use.
+
+### 18.4 Failure modes
+
+| Scenario | Required behaviour |
+|---|---|
+| `ACCESS_NOTIFICATION_POLICY` not granted | Ringer policy is inert. **Say so loudly on Home** — a silently non-functional Quiet Ringer is the worst outcome here (R8). Never show "active" while the ringer is unrestricted. |
+| App crashes while rule is active | Rule state is re-derived on boot and on foreground; reconcile sets it false when inactive. |
+| App uninstalled while rule is active | `removeAutomaticZenRule` on teardown. A stranded rule would leave the phone permanently quiet with the owning app gone. |
+| Device owner relinquished | Unrelated — the zen rule does not depend on device owner and keeps working. |
+| User has manual DND on independently | Nope-Mode owns *its* rule only; it must never write global DND state or fight the user's own setting. |
+| No starred contacts exist | Valid, and means nothing rings. Warn once at setup — it is a plausible mistake, not necessarily an intent. |
+
+### 18.5 Settings
+
+- **Quiet Ringer** — master on/off for the whole feature. Default **on**.
+- **Allow repeat callers** — default **on**. A second call from the same number
+  is the closest thing to an emergency signal the platform offers, and missing
+  a genuine emergency is worse than one unwanted ring. The user can turn it off.
+
+Both live in the Settings screen and, like the break-friction settings, are
+**editable only while Nope-Mode is inactive** (§9).
