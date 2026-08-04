@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nope-Mode</string>
+    <string name="tier_device_owner">Device owner</string>
+    <string name="tier_fallback">Limited</string>
+</resources>

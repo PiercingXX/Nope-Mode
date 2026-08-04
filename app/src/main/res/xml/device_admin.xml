@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimal policy set. Device owner status, not these flags, is what grants
+     setPackagesSuspended; this element exists because the platform requires a
+     DeviceAdminReceiver to declare one. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <force-lock />
+    </uses-policies>
+</device-admin>
