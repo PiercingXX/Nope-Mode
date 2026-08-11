@@ -108,3 +108,4 @@ object BreakPolicy {
     private fun dayOfWeekIndex(day: LocalDate): Int = day.dayOfWeek.value - 1 // 0 = Monday .. 6 = Sunday
 
     private fun isDaySet(daysMask: Int, dayIndex: Int): Boolean = (daysMask and (1 shl dayIndex)) != 0
+}
