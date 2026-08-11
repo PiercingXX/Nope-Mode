@@ -7,7 +7,7 @@ commands, and file lists below are copied verbatim from that contract.
 - [x] T1 — ScheduleEvaluator: `shouldBeActiveAt` with midnight-crossing windows (full spec: contracts/estate-build.md T1)
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.ScheduleEvaluatorTest'
   - files: app/src/main/java/com/piercingxx/nopemode/core/ScheduleEvaluator.kt, app/src/test/java/com/piercingxx/nopemode/core/ScheduleEvaluatorTest.kt
-- [ ] T2 — Override sealed interface + `NopeController.derive` truth table (full spec: contracts/estate-build.md T2)
+- [x] T2 — Override sealed interface + `NopeController.derive` truth table (full spec: contracts/estate-build.md T2)
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.NopeControllerTest'
   - files: app/src/main/java/com/piercingxx/nopemode/core/Override.kt, app/src/main/java/com/piercingxx/nopemode/core/NopeController.kt, app/src/test/java/com/piercingxx/nopemode/core/NopeControllerTest.kt
 - [ ] T3 — BreakPolicy: minimum interval, budget, reset at window end (full spec: contracts/estate-build.md T3)
