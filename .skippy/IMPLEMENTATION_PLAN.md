@@ -18,7 +18,7 @@ commands, and file lists below are copied verbatim from that contract.
   - verify-failed: loop 6 exit 1 — env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.BreakPolicyTest' — tion to get the stack trace. > Run with --info or --debug option to get more log output. > Run with --scan to get full insights. > Get more help at https://help.gradle.org. BUILD FAILED in 10s 20 actionable tasks: 2 executed, 18 up-to-date
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.BreakPolicyTest'
   - files: app/src/main/java/com/piercingxx/nopemode/core/BreakPolicy.kt, app/src/test/java/com/piercingxx/nopemode/core/BreakPolicyTest.kt
-- [ ] T4 — Next-boundary computation (WS6 pure slice) (full spec: contracts/estate-build.md T4)
+- [x] T4 — Next-boundary computation (WS6 pure slice) (full spec: contracts/estate-build.md T4)
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.NextBoundaryTest'
   - files: app/src/main/java/com/piercingxx/nopemode/core/NextBoundary.kt, app/src/test/java/com/piercingxx/nopemode/core/NextBoundaryTest.kt
 - [ ] T5 — Seed-schedule factory (WS2 pure slice) (full spec: contracts/estate-build.md T5)
