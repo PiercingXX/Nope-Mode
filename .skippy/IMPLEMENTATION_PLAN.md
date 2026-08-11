@@ -21,7 +21,7 @@ commands, and file lists below are copied verbatim from that contract.
 - [x] T4 — Next-boundary computation (WS6 pure slice) (full spec: contracts/estate-build.md T4)
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.NextBoundaryTest'
   - files: app/src/main/java/com/piercingxx/nopemode/core/NextBoundary.kt, app/src/test/java/com/piercingxx/nopemode/core/NextBoundaryTest.kt
-- [ ] T5 — Seed-schedule factory (WS2 pure slice) (full spec: contracts/estate-build.md T5)
+- [x] T5 — Seed-schedule factory (WS2 pure slice) (full spec: contracts/estate-build.md T5)
   - verify: env JAVA_HOME=$HOME/.local/toolchains/jdk17 ANDROID_HOME=$HOME/.local/toolchains/android-sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.data.SeedScheduleTest'
   - files: app/src/main/java/com/piercingxx/nopemode/data/SeedSchedule.kt, app/src/test/java/com/piercingxx/nopemode/data/SeedScheduleTest.kt
 - [ ] T6 — BackupJson: Gson round-trip of blocked apps, schedules, settings (full spec: contracts/estate-build.md T6)
