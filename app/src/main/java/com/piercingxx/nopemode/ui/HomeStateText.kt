@@ -31,6 +31,17 @@ object HomeStateText {
         return if (isActive) "Nope-Mode is ON" else "Nope-Mode is OFF"
     }
 
+    /**
+     * The blocked-app count line. Zero is called out explicitly: an empty list
+     * means Nope-Mode suspends nothing however active it claims to be, and
+     * saying "ON" over a silent no-op is exactly the dishonesty R8 forbids.
+     */
+    fun blockedCountText(count: Int): String = when (count) {
+        0 -> "No apps blocked yet — Nope-Mode will not suspend anything."
+        1 -> "1 app blocked."
+        else -> "$count apps blocked."
+    }
+
     /** The enforcement tier line (design §5) — honest about what tier is live. */
     fun tierText(isDeviceOwner: Boolean): String =
         if (isDeviceOwner) {
