@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Scheduling. Exact alarms are required: an inexact 20:00 boundary can
          drift by minutes, which is visible and wrong for a bedtime schedule. -->
@@ -9,8 +10,11 @@
 
     <!-- Needed to list installed apps for the blocked-app picker. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission"
-        xmlns:tools="http://schemas.android.com/tools" />
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- Break countdown notification (WS7). Runtime request on API 33+ alongside
+         the countdown. WS0 build-correctness fix. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Deliberately NO android.permission.INTERNET. Nope-Mode never talks to
          a network; keeping this absent makes that claim verifiable. -->
