@@ -109,6 +109,35 @@
             </intent-filter>
         </service>
 
+        <!-- WS9 FallbackEnforcer (design §8.2). The notification listener
+             suppresses blocked apps' notifications while active. BIND is
+             required so the system can bind it. -->
+        <service
+            android:name=".service.NopeNotificationListener"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- WS9 FallbackEnforcer (design §8.2). The accessibility service reads
+             the foreground package and covers blocked apps with BlockedActivity.
+             BIND is required so the system can bind it. -->
+        <service
+            android:name=".service.NopeAccessibilityService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
     </application>
 
 </manifest>

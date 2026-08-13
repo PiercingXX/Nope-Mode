@@ -12,4 +12,5 @@
     <string name="setup_title">Setup</string>
     <string name="tile_active">Nope-Mode active</string>
     <string name="tile_inactive">Nope-Mode off</string>
+    <string name="accessibility_service_description">Covers blocked apps with the Nope-Mode screen while active (fallback tier).</string>
 </resources>
