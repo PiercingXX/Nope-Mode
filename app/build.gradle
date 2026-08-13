@@ -37,6 +37,10 @@ android {
         }
     }
     compileOptions {
+        // core/ uses java.time (LocalDateTime, Instant, Duration) which is API
+        // 26+. minSdk is 24, so desugar it or API 24-25 devices throw
+        // NoClassDefFoundError at runtime. WS0 build-correctness fix.
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -46,6 +50,18 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
+    }
+    testOptions {
+        unitTests {
+            returnDefaultValues true
+        }
+    }
+    // Export the Room schema so it can be committed and diffed across versions
+    // (T2, WS2). Room writes a JSON schema per version into this directory.
+    kapt {
+        arguments {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 }
 
@@ -66,8 +82,12 @@ dependencies {
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 
+    // Core library desugaring for java.time on API 24-25 (WS0 build-correctness).
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20231013'
+    testImplementation 'io.mockk:mockk:1.13.10'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:core:1.5.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'

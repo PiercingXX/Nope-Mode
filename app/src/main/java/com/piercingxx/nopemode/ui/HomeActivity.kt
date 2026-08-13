@@ -28,21 +28,10 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun render() {
-        binding.stateText.text = getString(com.piercingxx.nopemode.R.string.app_name)
-
-        when (deviceOwner.tier()) {
-            DeviceOwnerManager.Tier.DEVICE_OWNER -> {
-                binding.tierText.text =
-                    "Enforcement: Device owner — apps can be fully suspended."
-                binding.provisionText.text = ""
-            }
-            DeviceOwnerManager.Tier.FALLBACK -> {
-                binding.tierText.text =
-                    "Enforcement: Limited — not provisioned as device owner. " +
-                        "Notifications can only be dismissed after they post, " +
-                        "so a sound may play first."
-                binding.provisionText.text = deviceOwner.provisioningCommand()
-            }
-        }
+        val isDeviceOwner = deviceOwner.tier() == DeviceOwnerManager.Tier.DEVICE_OWNER
+        binding.stateText.text = HomeStateText.stateText(true, com.piercingxx.nopemode.core.Override.None)
+        binding.tierText.text = HomeStateText.tierText(isDeviceOwner)
+        binding.provisionText.text =
+            HomeStateText.provisionText(isDeviceOwner, deviceOwner.provisioningCommand())
     }
 }

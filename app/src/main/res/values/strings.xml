@@ -3,4 +3,16 @@
     <string name="app_name">Nope-Mode</string>
     <string name="tier_device_owner">Device owner</string>
     <string name="tier_fallback">Limited</string>
+    <string name="blocked_apps_title">Blocked apps</string>
+    <string name="blocked_apps_empty">No apps blocked yet. Add apps to suspend while Nope-Mode is active.</string>
+    <string name="schedules_title">Schedules</string>
+    <string name="schedules_empty">No schedules yet. A default schedule is seeded on first run.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_locked_hint">Friction settings are editable only while Nope-Mode is inactive.</string>
+    <string name="setup_title">Setup</string>
+    <string name="tile_active">Nope-Mode active</string>
+    <string name="tile_inactive">Nope-Mode off</string>
+    <string name="accessibility_service_description">Covers blocked apps with the Nope-Mode screen while active (fallback tier).</string>
+    <string name="backup_title">Backup</string>
+    <string name="backup_hint">Export and restore blocked apps, schedules and friction settings as JSON. A restored file is validated before anything is committed, so a bad backup can never overwrite existing state.</string>
 </resources>
