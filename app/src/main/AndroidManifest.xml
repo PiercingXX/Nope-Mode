@@ -20,6 +20,12 @@
          the countdown. WS0 build-correctness fix. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- WS11 Quiet Ringer (design §18). Lets Nope-Mode own an AutomaticZenRule
+         that restricts the ringer while active. User grant: Settings → Do Not
+         Disturb access. Without it the ringer policy is inert and Home must say
+         so loudly (R8). -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
     <!-- Deliberately NO android.permission.INTERNET. Nope-Mode never talks to
          a network; keeping this absent makes that claim verifiable. -->
 
