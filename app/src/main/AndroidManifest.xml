@@ -61,6 +61,10 @@
             android:exported="false"
             android:label="@string/settings_title" />
         <activity
+            android:name=".ui.BackupActivity"
+            android:exported="false"
+            android:label="@string/backup_title" />
+        <activity
             android:name=".ui.SetupActivity"
             android:exported="false"
             android:label="@string/setup_title" />
