@@ -5,8 +5,11 @@ Selected apps go silent and un-openable — on a schedule, or on demand.
 A cleanroom equivalent of Google's Focus Mode, for GrapheneOS, where Digital
 Wellbeing does not exist. No accounts, no network, no analytics.
 
-**Status:** specification only. See [design.md](design.md) for the full spec
-and [todo.md](todo.md) for the build plan.
+**Status:** under construction, not yet usable. The enforcement, scheduling and
+data layers are written and covered by 149 unit tests, and the app installs and
+runs as device owner — but there is still no way to pick which apps to block, so
+nothing is suspended yet. See [design.md](design.md) for the full spec and
+[todo.md](todo.md) for what is actually done.
 
 ## What it does
 

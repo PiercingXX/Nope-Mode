@@ -3,16 +3,41 @@
 Spec: [design.md](design.md). Target: Pixel 9 Pro (`caiman`), GrapheneOS,
 Android 17 / SDK 37.
 
-**State verified on-device 2026-08-12.** `./gradlew test assembleDebug` is
-green: 58 unit tests, 0 failures. APK installs; `HomeActivity` launches without
-crashing; `com.piercingxx.nopemode` is still device owner
-(`isOrganizationOwnedDevice=true`). The absent `INTERNET` permission is
-confirmed against the built APK via `aapt2 dump permissions`.
+**State verified on-device 2026-08-13.** `./gradlew test assembleDebug` is
+green: 149 unit tests, 0 failures. APK installs; `HomeActivity` launches without
+crashing; `com.piercingxx.nopemode` is still device owner (`testOnlyAdmin=false`).
+The absent `INTERNET` permission is confirmed against the built APK via
+`aapt2 dump permissions`. `NopeTileService` now registers, so the tile is
+available to add to the shade.
 
-**What the app currently does: nothing but report its enforcement tier.** Every
-pure-logic layer is built and proven. Every layer that touches the platform is
-absent — no database, no enforcer, no alarms, no reconcile. Nothing is ever
-suspended.
+**What the app currently does: still nothing to a user.** Every class in
+design §13 now exists and the pure logic under each is well covered. But the
+Android wiring is incomplete in one decisive place:
+
+> **Nothing ever writes to `blocked_app`.** Every reference to `BlockedAppDao`
+> in `app/src/main` is a read. `BlockedAppsActivity` is a 20-line shell that
+> inflates a layout and stops. With no way to select an app, the desired set is
+> always empty, so `SuspendEnforcer` is always asked to suspend nothing.
+
+The consequence: WS5's and WS6's on-device gates have **never been run**, and
+cannot be run through the UI. The enforcement path is written and unit-tested
+but has not once suspended a real app on a real device.
+
+Three further gaps, all verified by grep on 2026-08-13:
+
+- **No screen navigates to any other.** There is no `startActivity` anywhere in
+  `ui/`. The five WS7 screens are registered in the manifest and unreachable.
+- **`HomeActivity` reports fiction.** `render()` calls
+  `HomeStateText.stateText(true, Override.None)` — the `true` is a literal, not
+  derived state. It will say the same thing whether or not Nope-Mode is active.
+- **`RingerPolicy` is never constructed.** WS11 is inert dead code; the zen rule
+  is never created, so the ringer is never restricted. Per design §18.4 and R8
+  this is the worst failure shape — silently inert while appearing built.
+
+`reconcile()` is reached from `BootReceiver` (boot + alarm) and the tile only.
+Design §7.1 also requires app-foregrounded, schedule-edited, blocked-list-edited,
+break start/expiry, `TIME_SET` and `TIMEZONE_CHANGED`. The last two are not in
+the manifest at all.
 
 ---
 
@@ -41,24 +66,43 @@ adb shell am start -n com.piercingxx.nopemode/.ui.HomeActivity
 
 ## Status at a glance
 
+"Written" below means the class exists and its pure logic is unit-tested.
+"Working" means it has been shown to do its job on the device. Almost nothing
+has crossed that second line yet, because the blocked-app picker does not exist.
+
 | WS | Scope | State |
 |---|---|---|
 | 1 | Skeleton — gradle, manifest, packages, icon | **done** |
 | 4 | Device admin receiver, `DeviceOwnerManager`, relinquish | **done, provisioned** |
 | 3 | Core logic — evaluator, override, break policy, next boundary | **done, 49 tests** |
-| 0 | Build correctness fixes | **← start here, small** |
-| 2 | Entities **done**; DAOs, `NopeDatabase`, seed migration | **partial** |
-| 5 | `SuspendEnforcer`, `suspend_record`, failure surfacing | unbuilt |
-| 6 | `AlarmScheduler`, `BootReceiver`, **`reconcile()`** | unbuilt |
-| 7 | UI — five screens, break friction | unbuilt |
-| 8 | QS tile | unbuilt |
-| 11 | Quiet Ringer | unbuilt |
-| 9 | `FallbackEnforcer` — listener + accessibility | unbuilt |
-| 10 | `BackupJson` **done, 4 tests**; file I/O wiring | **partial** |
+| 0 | Build correctness fixes | **done** |
+| 2 | Entities, DAOs, `NopeDatabase`, seed, `OverrideMapper`, schema | **done** |
+| 5 | `SuspendEnforcer`, `suspend_record`, failure surfacing | written, **gate never run** |
+| 6 | `AlarmScheduler`, `BootReceiver`, `Reconciler` | written, **gate never run**; missing triggers |
+| 8 | QS tile | written; **registers on-device** |
+| 9 | `FallbackEnforcer` — listener + accessibility | written, needs grants to test |
+| 10 | `BackupJson` + `BackupValidator` + `BackupActivity` | written, **unreachable** |
+| 11 | Quiet Ringer | written but **inert — never constructed** |
+| 7 | UI — five screens, break friction | **shells only; the blocker** |
 
-**Shortest path to an app that actually blocks something: WS0 → WS2 → WS5 →
-WS6.** That sequence is fully headless and is where the product starts
-existing. WS7 makes it usable; WS8/9/10/11 make it complete.
+**The one thing standing between this and a working product is WS7's blocked-app
+picker.** Everything downstream of it is already written and waiting for a
+non-empty blocked list. Build the picker, and WS5's and WS6's gates become
+runnable for the first time.
+
+Order from here:
+
+1. **WS7a — blocked-app picker.** List installed apps, checkboxes, write to
+   `blocked_app`, reconcile on change. Excluded packages shown disabled with the
+   inline reason `SuspendablePackages` already computes.
+2. **WS5/WS6 gates on-device.** Suspend a real app, confirm it greys out and
+   goes silent; reboot inside the window; cross a boundary.
+3. **WS7b — navigation and real state.** Home reads derived state instead of a
+   literal; buttons to the other five screens.
+4. **WS11 wiring.** Construct `RingerPolicy` inside the reconcile path.
+5. **WS6 trigger completeness.** `TIME_SET`, `TIMEZONE_CHANGED`, foreground,
+   edits.
+6. **WS7c — remaining screens**, break friction, warnings surface.
 
 ---
 

@@ -72,4 +72,75 @@ class BackupJsonTest {
         assertNull(BackupJson.import("""{"version": 1}"""))
         assertNull(BackupJson.import("""{"blockedApps": [], "schedules": []}"""))
     }
+
+    private fun payload(blockedApps: String, schedules: String): String = """
+        {
+          "version": 1,
+          "blockedApps": $blockedApps,
+          "schedules": $schedules,
+          "settings": {
+            "breakDurationMinutes": 5,
+            "minIntervalMinutes": 60,
+            "breakBudgetPerWindow": 3
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `a null element inside a list rejects the whole payload`() {
+        // The dangerous case: parseable JSON whose array holds a literal null.
+        // Dropping the bad element would silently restore a partial backup.
+        assertNull(BackupJson.import(payload("[null]", "[]")))
+        assertNull(BackupJson.import(payload("[]", "[null]")))
+    }
+
+    @Test
+    fun `an element missing a field rejects the whole payload`() {
+        assertNull(BackupJson.import(payload("""[{"addedAt": 1000}]""", "[]")))
+        assertNull(BackupJson.import(payload("""[{"packageName": "com.example.one"}]""", "[]")))
+        // Schedule missing endMinuteOfDay: would otherwise default to 0 and
+        // become a real, wrong window rather than a rejected file.
+        assertNull(
+            BackupJson.import(
+                payload(
+                    "[]",
+                    """[{"id": 1, "startMinuteOfDay": 1200, "daysMask": 127, "enabled": true}]"""
+                )
+            )
+        )
+    }
+
+    @Test
+    fun `settings missing a field rejects the whole payload`() {
+        val json = """
+            {
+              "version": 1,
+              "blockedApps": [],
+              "schedules": [],
+              "settings": { "breakDurationMinutes": 5 }
+            }
+        """.trimIndent()
+        assertNull(BackupJson.import(json))
+    }
+
+    @Test
+    fun `a fully specified payload is accepted`() {
+        // Guards the tests above: they must fail for the missing field, not
+        // because the hand-written payload shape is wrong.
+        val restored = BackupJson.import(
+            payload(
+                """[{"packageName": "com.example.one", "addedAt": 1000}]""",
+                """[{"id": 1, "startMinuteOfDay": 1200, "endMinuteOfDay": 480, "daysMask": 127, "enabled": true}]"""
+            )
+        )
+
+        assertNotNull(restored)
+        restored!!
+        assertEquals(listOf(BlockedApp("com.example.one", 1000L)), restored.blockedApps)
+        assertEquals(
+            listOf(Schedule(1L, 1200, 480, 0b1111111, true)),
+            restored.schedules
+        )
+        assertEquals(settings, restored.settings)
+    }
 }
