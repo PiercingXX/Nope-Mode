@@ -138,7 +138,7 @@ changes. The contract states plainly: this test proves the `java.time` path is
 correct on the JVM; the desugaring *config* itself is proven only by the final
 `assembleDebug` gate.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.DesugaredTimeTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.core.DesugaredTimeTest`
 - files: `app/build.gradle`, `app/src/main/AndroidManifest.xml`,
   `app/src/test/java/com/piercingxx/nopemode/core/DesugaredTimeTest.kt`
 
@@ -167,7 +167,7 @@ including `ForceOn(null)` and a null row reading as `Override.None`. The DAO and
 `NopeDatabase` code is written here and its *behavior* is deferred to the
 operator's on-device check (fresh install has the 20:00→08:00 seed row).
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.data.OverrideMapperTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.data.OverrideMapperTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/data/BlockedAppDao.kt`,
   `app/src/main/java/com/piercingxx/nopemode/data/ScheduleDao.kt`,
   `app/src/main/java/com/piercingxx/nopemode/data/AppStateDao.kt`,
@@ -199,7 +199,7 @@ a NEW test asserts that self, a device admin, the active launcher, the IME, and
 the SMS handler are excluded with reasons, and that a normal third-party app is
 included.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.enforce.SuspendablePackagesTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.enforce.SuspendablePackagesTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/enforce/Enforcer.kt`,
   `app/src/main/java/com/piercingxx/nopemode/enforce/SuspendablePackages.kt`,
   `app/src/main/java/com/piercingxx/nopemode/enforce/SuspendEnforcer.kt`,
@@ -227,7 +227,7 @@ override-expiry boundary is armed alongside the schedule boundary, and a
 `ForceOn(null)` (indefinite) arms no schedule boundary but does arm the
 override-expiry path.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.schedule.ReconcilerTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.schedule.ReconcilerTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/schedule/Reconciler.kt`,
   `app/src/test/java/com/piercingxx/nopemode/schedule/ReconcilerTest.kt`
 
@@ -254,7 +254,7 @@ this task gets a NEW pure test on a small helper: the **degradation decision**
 AlarmManager method to use and whether to raise the persistent warning. That is
 the one JVM-provable slice of the scheduler.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.schedule.AlarmModeTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.schedule.AlarmModeTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/schedule/AlarmScheduler.kt`,
   `app/src/main/java/com/piercingxx/nopemode/schedule/BootReceiver.kt`,
   `app/src/main/java/com/piercingxx/nopemode/schedule/AlarmMode.kt`,
@@ -289,7 +289,7 @@ override, next boundary, tier, warning flags) into the exact reason strings the
 Home screen renders ("scheduled until 08:00", "break, 12 min left", "exact-alarm
 degraded", "DND access not granted", "package X refused"). A NEW test drives it.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.ui.HomeStateTextTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.ui.HomeStateTextTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/ui/HomeActivity.kt`,
   `app/src/main/java/com/piercingxx/nopemode/ui/BlockedAppsActivity.kt`,
   `app/src/main/java/com/piercingxx/nopemode/ui/SchedulesActivity.kt`,
@@ -313,7 +313,7 @@ The JVM-provable slice is the **tile state derivation** — a pure function that
 given derived `isActive` and the current override, returns the label and whether
 the tile reads as "on". A NEW test covers active/inactive/ForceOn.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.service.TileStateTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.service.TileStateTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/service/NopeTileService.kt`,
   `app/src/main/java/com/piercingxx/nopemode/service/TileState.kt`,
   `app/src/test/java/com/piercingxx/nopemode/service/TileStateTest.kt`,
@@ -341,7 +341,7 @@ with calls-from-starred-only and repeat-callers set, and nothing else touched
 asserts the starred-calls-only policy, the repeat-caller toggle on/off, and that
 no notification-category fields are set.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.service.ZenPolicyBuilderTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.service.ZenPolicyBuilderTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/service/RingerPolicy.kt`,
   `app/src/main/java/com/piercingxx/nopemode/service/ZenPolicyBuilder.kt`,
   `app/src/test/java/com/piercingxx/nopemode/service/ZenPolicyBuilderTest.kt`,
@@ -364,7 +364,7 @@ given (packageName, active, blocked set, isSuspendable), decides whether to
 cancel/snooze and with what duration. A NEW test covers cancel-on-blocked-active,
 no-op when inactive or not blocked, and the debounce window.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.service.NotificationDecisionTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.service.NotificationDecisionTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/service/NopeNotificationListener.kt`,
   `app/src/main/java/com/piercingxx/nopemode/service/NopeAccessibilityService.kt`,
   `app/src/main/java/com/piercingxx/nopemode/service/NotificationDecision.kt`,
@@ -389,7 +389,7 @@ Finish WS10. `BackupJson` is built and round-trip tested. Add:
   outright**; T1's BackupJson item was removed so the two tasks do not overlap.
   T10's verify is the new validation test.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.data.BackupValidationTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests com.piercingxx.nopemode.data.BackupValidationTest`
 - files: `app/src/main/java/com/piercingxx/nopemode/data/BackupJson.kt`,
   `app/src/main/java/com/piercingxx/nopemode/data/BackupValidator.kt`,
   `app/src/main/java/com/piercingxx/nopemode/ui/BackupActivity.kt` (or wired into
