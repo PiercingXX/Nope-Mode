@@ -108,7 +108,8 @@ Toolchain law (this machine):
 
 ### T1 — WS0 build-correctness fixes
 
-The four WS0 items, all build-level and JVM-verifiable:
+The three WS0 build-level items (the fourth WS0 item — the BackupJson warning
+fix — is T10's):
 
 - Enable **core library desugaring** in `app/build.gradle`
   (`coreLibraryDesugaringEnabled true` + `coreLibraryDesugaring
@@ -116,22 +117,30 @@ The four WS0 items, all build-level and JVM-verifiable:
   `core/` is valid on minSdk 24 (design §16, WS0).
 - Add **`POST_NOTIFICATIONS`** to the manifest (design §12; WS7's break
   countdown needs it).
-- **Silence the three always-false warnings** in `BackupJson.import` by
-  annotating the fields nullable in a private DTO and mapping to `BackupData`
-  after validation (WS0) — the guards stay, the compiler stops complaining.
 - Move the inline `xmlns:tools` on `QUERY_ALL_PACKAGES` up to the `<manifest>`
   tag (WS0, cosmetic).
+- The BackupJson always-false-warning fix (nullable DTO + map) is **T10's**,
+  not this task's — T10 owns the DTO refactor and its validation.
 
-The desugaring and manifest changes are build-level; the BackupJson change is
-covered by the existing T6 test (which must still pass). This task's own verify
-is a NEW test asserting the desugared `java.time` path and the
-`POST_NOTIFICATIONS` manifest entry via the build — the narrowed gate is the
-full unit-test run for the `core` package, which exercises the desugared
-`java.time` classes on the JVM.
+The desugaring and manifest changes are build-level: desugaring is a DEX-time
+transform that never runs on host-JVM unit tests, and the manifest entry is not
+a unit-test concern, so **no host-JVM test can prove those two directly** — only
+the full `assembleDebug` gate (the marathon's final gate) proves them. What a
+JVM test *can* prove is the **`java.time` path that desugaring makes valid on
+minSdk 24**: the `core/` schedule-boundary code uses `java.time` types
+(`LocalTime`, `ZoneId`), and a test that drives those through a real boundary
+computation (including a DST transition) would fail if that code were broken.
+This task's verify is therefore a **NEW** test class — `DesugaredTimeTest`,
+asserting `NopeController.derive`/`NextBoundary` compute correct boundaries
+across a DST transition using `java.time` — not the pre-existing
+`ScheduleEvaluatorTest`, which is already green and cannot fail for anything T1
+changes. The contract states plainly: this test proves the `java.time` path is
+correct on the JVM; the desugaring *config* itself is proven only by the final
+`assembleDebug` gate.
 
-- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.ScheduleEvaluatorTest'`
+- verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.core.DesugaredTimeTest'`
 - files: `app/build.gradle`, `app/src/main/AndroidManifest.xml`,
-  `app/src/main/java/com/piercingxx/nopemode/data/BackupJson.kt`
+  `app/src/test/java/com/piercingxx/nopemode/core/DesugaredTimeTest.kt`
 
 ### T2 — WS2 data layer: DAOs, `NopeDatabase`, seed migration, mappers
 
@@ -376,10 +385,9 @@ Finish WS10. `BackupJson` is built and round-trip tested. Add:
 - Import writes to the database in a single transaction, then reconciles
   (Android wiring, written, behavior deferred).
 - Also fix the WS0 always-false warnings in `BackupJson.import` here (nullable
-  DTO + map) — this overlaps T1's BackupJson item; **T1 owns the manifest and
-  desugaring**, T10 owns the BackupJson DTO refactor and its validation. To keep
-  verifies distinct, T1's verify exercises the desugared `java.time` path via the
-  core test, and T10's verify is the new validation test.
+  DTO + map) — **T10 owns the BackupJson DTO refactor and its validation
+  outright**; T1's BackupJson item was removed so the two tasks do not overlap.
+  T10's verify is the new validation test.
 
 - verify: `env JAVA_HOME=$HOME/.local/android-toolchain/jdk17 ANDROID_HOME=$HOME/.local/android-toolchain/sdk ./gradlew --no-daemon testDebugUnitTest --tests 'com.piercingxx.nopemode.data.BackupValidationTest'`
 - files: `app/src/main/java/com/piercingxx/nopemode/data/BackupJson.kt`,
