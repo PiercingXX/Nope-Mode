@@ -51,6 +51,13 @@ android {
         viewBinding true
         buildConfig true
     }
+    // Export the Room schema so it can be committed and diffed across versions
+    // (T2, WS2). Room writes a JSON schema per version into this directory.
+    kapt {
+        arguments {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+    }
 }
 
 dependencies {
