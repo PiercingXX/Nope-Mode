@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Scheduling. Exact alarms are required: an inexact 20:00 boundary can
          drift by minutes, which is visible and wrong for a bedtime schedule. -->
@@ -9,8 +10,21 @@
 
     <!-- Needed to list installed apps for the blocked-app picker. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission"
-        xmlns:tools="http://schemas.android.com/tools" />
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <!-- WS8 Quick Settings tile. BIND_QUICK_SETTINGS_TILE is required for any
+         TileService so the system can bind it into the shade. -->
+    <uses-permission android:name="android.permission.BIND_QUICK_SETTINGS_TILE" />
+
+    <!-- Break countdown notification (WS7). Runtime request on API 33+ alongside
+         the countdown. WS0 build-correctness fix. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- WS11 Quiet Ringer (design §18). Lets Nope-Mode own an AutomaticZenRule
+         that restricts the ringer while active. User grant: Settings → Do Not
+         Disturb access. Without it the ringer policy is inert and Home must say
+         so loudly (R8). -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <!-- Deliberately NO android.permission.INTERNET. Nope-Mode never talks to
          a network; keeping this absent makes that claim verifiable. -->
@@ -32,6 +46,46 @@
             </intent-filter>
         </activity>
 
+        <!-- WS7 screens (design §11). Reachable from the home screen and from
+             each other; none is a launcher entry. -->
+        <activity
+            android:name=".ui.BlockedAppsActivity"
+            android:exported="false"
+            android:label="@string/blocked_apps_title" />
+        <activity
+            android:name=".ui.SchedulesActivity"
+            android:exported="false"
+            android:label="@string/schedules_title" />
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title" />
+        <activity
+            android:name=".ui.BackupActivity"
+            android:exported="false"
+            android:label="@string/backup_title" />
+        <activity
+            android:name=".ui.SetupActivity"
+            android:exported="false"
+            android:label="@string/setup_title" />
+        <activity
+            android:name=".ui.BlockedActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.NopeMode" />
+
+        <!-- WS6 scheduling receiver (design §7.2). Re-arms the exact alarm on
+             boot and wakes the reconcile loop when the armed alarm fires. -->
+        <receiver
+            android:name=".schedule.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.piercingxx.nopemode.action.RECONCILE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Device admin receiver. Provisioned as device owner over ADB:
              adb shell dpm set-device-owner \
                com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver -->
@@ -46,6 +100,47 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <!-- WS8 Quick Settings tile (design §11.1). Toggles ForceOn / clears it;
+             label and state track derived state via requestListeningState. -->
+        <service
+            android:name=".service.NopeTileService"
+            android:exported="true"
+            android:label="@string/tile_inactive"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- WS9 FallbackEnforcer (design §8.2). The notification listener
+             suppresses blocked apps' notifications while active. BIND is
+             required so the system can bind it. -->
+        <service
+            android:name=".service.NopeNotificationListener"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- WS9 FallbackEnforcer (design §8.2). The accessibility service reads
+             the foreground package and covers blocked apps with BlockedActivity.
+             BIND is required so the system can bind it. -->
+        <service
+            android:name=".service.NopeAccessibilityService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
 
     </application>
 
