@@ -36,6 +36,31 @@
             </intent-filter>
         </activity>
 
+        <!-- WS7 screens (design §11). Reachable from the home screen and from
+             each other; none is a launcher entry. -->
+        <activity
+            android:name=".ui.BlockedAppsActivity"
+            android:exported="false"
+            android:label="@string/blocked_apps_title" />
+        <activity
+            android:name=".ui.SchedulesActivity"
+            android:exported="false"
+            android:label="@string/schedules_title" />
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title" />
+        <activity
+            android:name=".ui.SetupActivity"
+            android:exported="false"
+            android:label="@string/setup_title" />
+        <activity
+            android:name=".ui.BlockedActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.NopeMode" />
+
         <!-- WS6 scheduling receiver (design §7.2). Re-arms the exact alarm on
              boot and wakes the reconcile loop when the armed alarm fires. -->
         <receiver
