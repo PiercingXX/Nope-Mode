@@ -51,6 +51,11 @@ android {
         viewBinding true
         buildConfig true
     }
+    testOptions {
+        unitTests {
+            returnDefaultValues true
+        }
+    }
     // Export the Room schema so it can be committed and diffed across versions
     // (T2, WS2). Room writes a JSON schema per version into this directory.
     kapt {
@@ -82,6 +87,7 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20231013'
+    testImplementation 'io.mockk:mockk:1.13.10'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:core:1.5.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
