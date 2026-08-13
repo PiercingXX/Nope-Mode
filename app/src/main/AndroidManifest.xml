@@ -36,6 +36,17 @@
             </intent-filter>
         </activity>
 
+        <!-- WS6 scheduling receiver (design §7.2). Re-arms the exact alarm on
+             boot and wakes the reconcile loop when the armed alarm fires. -->
+        <receiver
+            android:name=".schedule.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="com.piercingxx.nopemode.action.RECONCILE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Device admin receiver. Provisioned as device owner over ADB:
              adb shell dpm set-device-owner \
                com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver -->

@@ -36,17 +36,31 @@ class ReconcilerTest {
 
     @Test
     fun `reconcile twice yields the same plan`() {
-        val inputs = {
-            Reconciler.reconcile(
-                now = at(2026, 8, 10, 21, 0),
-                schedules = listOf(defaultWindow),
-                override = Override.None,
-                blocked = setOf("com.example.games", "com.example.social"),
-                currentSuspended = setOf("com.example.games"),
-                tier = Tier.DEVICE_OWNER,
-            )
-        }
-        assertEquals(inputs(), inputs())
+        val now = at(2026, 8, 10, 21, 0)
+        val blocked = setOf("com.example.games", "com.example.social")
+        val first = Reconciler.reconcile(
+            now = now,
+            schedules = listOf(defaultWindow),
+            override = Override.None,
+            blocked = blocked,
+            currentSuspended = setOf("com.example.games"),
+            tier = Tier.DEVICE_OWNER,
+        )
+        // Applying the first plan's diff yields the desired suspended set.
+        val afterApply = setOf("com.example.games") - first.toRelease + first.toSuspend
+        val second = Reconciler.reconcile(
+            now = now,
+            schedules = listOf(defaultWindow),
+            override = Override.None,
+            blocked = blocked,
+            currentSuspended = afterApply,
+            tier = Tier.DEVICE_OWNER,
+        )
+        // Idempotent: once the diff is applied, reconciling the resulting state
+        // converges to a fixed point with no further diff.
+        assertEquals(emptySet<String>(), second.toSuspend)
+        assertEquals(emptySet<String>(), second.toRelease)
+        assertEquals(first.active, second.active)
     }
 
     // ---- Diff: suspend newly-blocked, release newly-unblocked ----
