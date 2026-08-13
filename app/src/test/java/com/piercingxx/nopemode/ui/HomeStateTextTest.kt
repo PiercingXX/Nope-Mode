@@ -102,4 +102,19 @@ class HomeStateTextTest {
         val until = instant(0)
         assertEquals(until.atZone(zone).toLocalDateTime(), HomeStateText.breakEndTime(until, zone))
     }
+
+    @Test
+    fun `zero blocked apps says so explicitly rather than reading as configured`() {
+        // "Nope-Mode is ON" over an empty blocked list suspends nothing. Saying
+        // only "0 apps blocked" reads as a tally; it has to say what it means.
+        val text = HomeStateText.blockedCountText(0)
+        assertTrue("must name the consequence, not just the count", text.contains("not suspend"))
+    }
+
+    @Test
+    fun `blocked count is singular for one and plural beyond`() {
+        assertEquals("1 app blocked.", HomeStateText.blockedCountText(1))
+        assertEquals("2 apps blocked.", HomeStateText.blockedCountText(2))
+        assertEquals("17 apps blocked.", HomeStateText.blockedCountText(17))
+    }
 }

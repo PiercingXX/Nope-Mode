@@ -14,6 +14,7 @@ import com.piercingxx.nopemode.data.SuspendRecordDao
 import com.piercingxx.nopemode.enforce.Enforcer
 import com.piercingxx.nopemode.enforce.SuspendEnforcer
 import com.piercingxx.nopemode.schedule.Reconciler.Tier
+import com.piercingxx.nopemode.service.RingerPolicy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDateTime
@@ -43,6 +44,7 @@ class AlarmScheduler private constructor(
     private val blockedAppDao: BlockedAppDao,
     private val suspendRecordDao: SuspendRecordDao,
     private val enforcer: Enforcer,
+    private val ringerPolicy: RingerPolicy,
     private val zone: ZoneId,
 ) {
 
@@ -75,7 +77,30 @@ class AlarmScheduler private constructor(
             Log.w(TAG, "enforcement incomplete; failed: ${result.failed}")
         }
 
+        applyRinger(plan.active)
         arm(plan)
+    }
+
+    /**
+     * Drive the Quiet Ringer from the same derived `isActive` as everything else
+     * (design §18.2) — there is no second scheduler.
+     *
+     * Inert until the user grants Do Not Disturb access: [RingerPolicy.ensureRule]
+     * returns null and nothing is touched. That grant is the opt-in, so this
+     * cannot start silencing calls on its own. Home surfaces the ungranted state
+     * rather than letting a silently inert Quiet Ringer look active (§18.4, R8).
+     */
+    private fun applyRinger(active: Boolean) {
+        runCatching {
+            val id = ringerPolicy.ensureRule(
+                // TODO(WS7c): thread both from the Settings screen (design §18.5)
+                // once friction settings are persisted. Repeat callers default on.
+                quietRingerEnabled = true,
+                allowRepeatCallers = true,
+            ) ?: return@runCatching
+            ringerPolicy.setActive(active)
+            Log.d(TAG, "quiet ringer rule $id active=$active")
+        }.onFailure { Log.w(TAG, "quiet ringer update failed", it) }
     }
 
     private fun currentTier(): Tier =
@@ -110,6 +135,7 @@ class AlarmScheduler private constructor(
                 blockedAppDao = db.blockedAppDao(),
                 suspendRecordDao = db.suspendRecordDao(),
                 enforcer = SuspendEnforcer(appContext, db.suspendRecordDao()),
+                ringerPolicy = RingerPolicy(appContext),
                 zone = ZoneId.systemDefault(),
             )
         }

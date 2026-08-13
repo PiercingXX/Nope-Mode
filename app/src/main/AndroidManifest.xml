@@ -83,6 +83,11 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="com.piercingxx.nopemode.action.RECONCILE" />
+                <!-- Design §7.1: a clock or zone change moves every boundary, and
+                     the armed alarm was computed against the old one. Re-derive
+                     and re-arm rather than firing at the wrong wall-clock time. -->
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
 

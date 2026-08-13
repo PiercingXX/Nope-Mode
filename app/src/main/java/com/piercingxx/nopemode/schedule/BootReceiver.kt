@@ -19,7 +19,11 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED, ACTION_RECONCILE -> {
+            Intent.ACTION_BOOT_COMPLETED,
+            ACTION_RECONCILE,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            -> {
                 try {
                     AlarmScheduler.from(context).reconcileAndApply()
                 } catch (e: Exception) {
