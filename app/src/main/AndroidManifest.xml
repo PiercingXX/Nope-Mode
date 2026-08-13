@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <!-- WS8 Quick Settings tile. BIND_QUICK_SETTINGS_TILE is required for any
+         TileService so the system can bind it into the shade. -->
+    <uses-permission android:name="android.permission.BIND_QUICK_SETTINGS_TILE" />
+
     <!-- Break countdown notification (WS7). Runtime request on API 33+ alongside
          the countdown. WS0 build-correctness fix. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -86,6 +90,18 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <!-- WS8 Quick Settings tile (design §11.1). Toggles ForceOn / clears it;
+             label and state track derived state via requestListeningState. -->
+        <service
+            android:name=".service.NopeTileService"
+            android:exported="true"
+            android:label="@string/tile_inactive"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
     </application>
 

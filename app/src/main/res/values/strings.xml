@@ -10,4 +10,6 @@
     <string name="settings_title">Settings</string>
     <string name="settings_locked_hint">Friction settings are editable only while Nope-Mode is inactive.</string>
     <string name="setup_title">Setup</string>
+    <string name="tile_active">Nope-Mode active</string>
+    <string name="tile_inactive">Nope-Mode off</string>
 </resources>
