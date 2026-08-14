@@ -38,10 +38,14 @@ object BreakPolicy {
      * new break may start. A null last break (never taken one) is always allowed;
      * a [now] before the last break (clock moved backwards) is not.
      */
-    fun minIntervalElapsed(now: Instant, lastBreakStartedAt: Instant?): Boolean {
+    fun minIntervalElapsed(
+        now: Instant,
+        lastBreakStartedAt: Instant?,
+        minIntervalMinutes: Int = DEFAULT_MIN_INTERVAL_MINUTES,
+    ): Boolean {
         if (lastBreakStartedAt == null) return true
         val elapsed = Duration.between(lastBreakStartedAt, now)
-        return !elapsed.isNegative && elapsed >= Duration.ofMinutes(DEFAULT_MIN_INTERVAL_MINUTES.toLong())
+        return !elapsed.isNegative && elapsed >= Duration.ofMinutes(minIntervalMinutes.toLong())
     }
 
     /**
@@ -49,11 +53,16 @@ object BreakPolicy {
      * inactive there is no active window to consume budget, so the full budget
      * is available.
      */
-    fun budgetRemaining(now: LocalDateTime, schedules: List<Schedule>, breaks: List<BreakLog>): Int {
-        val windowStart = currentWindowStart(now, schedules) ?: return DEFAULT_BUDGET
+    fun budgetRemaining(
+        now: LocalDateTime,
+        schedules: List<Schedule>,
+        breaks: List<BreakLog>,
+        budget: Int = DEFAULT_BUDGET,
+    ): Int {
+        val windowStart = currentWindowStart(now, schedules) ?: return budget
         val windowStartMillis = windowStart.atZone(zone).toInstant().toEpochMilli()
         val used = breaks.count { it.startedAt >= windowStartMillis }
-        return (DEFAULT_BUDGET - used).coerceAtLeast(0)
+        return (budget - used).coerceAtLeast(0)
     }
 
     /**
@@ -65,11 +74,44 @@ object BreakPolicy {
         now: LocalDateTime,
         schedules: List<Schedule>,
         breaks: List<BreakLog>,
-        lastBreakStartedAt: Instant?
+        lastBreakStartedAt: Instant?,
+        settings: FrictionSettings = FrictionSettings(),
     ): Boolean {
         if (currentWindowStart(now, schedules) == null) return false
-        if (budgetRemaining(now, schedules, breaks) <= 0) return false
-        return minIntervalElapsed(now.atZone(zone).toInstant(), lastBreakStartedAt)
+        if (budgetRemaining(now, schedules, breaks, settings.breakBudgetPerWindow) <= 0) return false
+        return minIntervalElapsed(
+            now.atZone(zone).toInstant(),
+            lastBreakStartedAt,
+            settings.minIntervalMinutes,
+        )
+    }
+
+    /**
+     * Why a break cannot be taken, or null when it can. The UI needs the reason,
+     * not just the boolean: "no breaks left until 08:00" is actionable, a greyed
+     * button with no explanation is just confusing (R8).
+     */
+    fun breakBlockedReason(
+        now: LocalDateTime,
+        schedules: List<Schedule>,
+        breaks: List<BreakLog>,
+        lastBreakStartedAt: Instant?,
+        settings: FrictionSettings = FrictionSettings(),
+    ): String? {
+        if (currentWindowStart(now, schedules) == null) {
+            return "Nope-Mode is not active — there is nothing to take a break from."
+        }
+        val remaining = budgetRemaining(now, schedules, breaks, settings.breakBudgetPerWindow)
+        if (remaining <= 0) {
+            return "No breaks left in this window. The budget resets when the window ends."
+        }
+        val nowInstant = now.atZone(zone).toInstant()
+        if (!minIntervalElapsed(nowInstant, lastBreakStartedAt, settings.minIntervalMinutes)) {
+            val waited = Duration.between(lastBreakStartedAt, nowInstant).toMinutes()
+            val left = (settings.minIntervalMinutes - waited).coerceAtLeast(0)
+            return "Too soon since the last break — $left min to wait."
+        }
+        return null
     }
 
     /**

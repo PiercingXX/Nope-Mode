@@ -18,6 +18,10 @@ interface BreakLogDao {
     @Query("SELECT COUNT(*) FROM break_log WHERE startedAt >= :sinceMillis")
     suspend fun breaksSince(sinceMillis: Long): Int
 
+    /** Breaks started at or after [sinceMillis], for the per-window budget. */
+    @Query("SELECT * FROM break_log WHERE startedAt >= :sinceMillis ORDER BY startedAt DESC")
+    suspend fun since(sinceMillis: Long): List<BreakLog>
+
     /** The most recent break, or `null` if none has ever been taken. */
     @Query("SELECT * FROM break_log ORDER BY startedAt DESC LIMIT 1")
     suspend fun mostRecent(): BreakLog?

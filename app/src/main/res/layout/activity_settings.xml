@@ -1,35 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/pxx_ink"
     android:padding="24dp">
 
-    <TextView
-        android:fontFamily="@string/font_body"
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/settings_title"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/pxx_paper"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:orientation="vertical">
 
-    <TextView
-        android:fontFamily="@string/font_body"
-        android:id="@+id/lockedText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/settings_locked_hint"
-        android:textSize="16sp"
-        android:textColor="@color/pxx_white_50"
-        app:layout_constraintTop_toBottomOf="@id/titleText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <TextView
+            style="@style/Text.Display"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_title"
+            android:textSize="26sp" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- §9: friction settings are editable only while INACTIVE, or the 2am
+             workaround is simply to raise the budget. Shown, not hidden. -->
+        <TextView
+            android:id="@+id/lockedText"
+            style="@style/Text.Warn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/settings_locked"
+            android:visibility="gone" />
+
+        <View style="@style/Divider" android:layout_marginTop="20dp" />
+
+        <CheckBox
+            android:id="@+id/quietRingerCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="@string/font_body"
+            android:text="@string/setting_quiet_ringer"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
+        <CheckBox
+            android:id="@+id/repeatCallersCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@string/font_body"
+            android:text="@string/setting_repeat_callers"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/dndWarning"
+            style="@style/Text.Warn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/grantDndButton"
+            style="@style/Button.Signal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/grant_dnd" />
+
+        <View style="@style/Divider" android:layout_marginTop="24dp" />
+
+        <TextView
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/setting_break_duration" />
+
+        <RadioGroup
+            android:id="@+id/breakLengthGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+        <TextView
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/setting_min_interval" />
+
+        <EditText
+            android:id="@+id/minIntervalInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_input"
+            android:fontFamily="@string/font_body"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
+        <TextView
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/setting_budget" />
+
+        <EditText
+            android:id="@+id/budgetInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_input"
+            android:fontFamily="@string/font_body"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+
+</ScrollView>
