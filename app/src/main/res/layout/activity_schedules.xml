@@ -5,31 +5,53 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/pxx_ink"
-    android:padding="24dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="32dp">
 
     <TextView
-        android:fontFamily="@string/font_body"
         android:id="@+id/titleText"
+        style="@style/Text.Display"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/schedules_title"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/pxx_paper"
+        android:textSize="26sp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:fontFamily="@string/font_body"
         android:id="@+id/emptyText"
+        style="@style/Text.Muted"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="18dp"
         android:text="@string/schedules_empty"
-        android:textSize="16sp"
-        android:textColor="@color/pxx_white_50"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/scheduleList"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/emptyText"
+        app:layout_constraintBottom_toTopOf="@id/addButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/addButton"
+        style="@style/Button.Signal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="@string/add_schedule"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

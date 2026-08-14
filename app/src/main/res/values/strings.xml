@@ -8,7 +8,7 @@
     <string name="blocked_apps_search_hint">Search apps</string>
     <string name="blocked_apps_confirm_block">Block anyway</string>
     <string name="schedules_title">Schedules</string>
-    <string name="schedules_empty">No schedules yet. A default schedule is seeded on first run.</string>
+    <string name="schedules_empty">No schedules. Nope-Mode will never turn on by itself.</string>
     <string name="settings_title">Settings</string>
     <string name="settings_locked_hint">Friction settings are editable only while Nope-Mode is inactive.</string>
     <string name="setup_title">Setup</string>
@@ -38,4 +38,8 @@
     <string name="turn_off_now">Turn off now</string>
     <string name="your_distracting_apps">Your distracting apps</string>
     <string name="select_more_apps">Select more apps</string>
+    <string name="add_schedule">Add schedule</string>
+    <string name="delete">Delete</string>
+    <string name="start_at">Start %1$s</string>
+    <string name="end_at">End %1$s</string>
 </resources>
