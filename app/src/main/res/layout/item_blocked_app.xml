@@ -10,8 +10,8 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="12dp"
-    android:paddingBottom="12dp">
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <ImageView
         android:id="@+id/appIcon"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@string/font_body"
             android:textColor="@color/pxx_paper"
-            android:textSize="16sp" />
+            android:textSize="18sp" />
 
         <!-- Warn amber: a reason a row cannot be picked, or a caution about
              picking it, is status rather than decoration (§3.5). -->
