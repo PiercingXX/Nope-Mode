@@ -1,6 +1,5 @@
 package com.piercingxx.nopemode.ui
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -9,7 +8,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.admin.DeviceOwnerManager
-import com.piercingxx.nopemode.core.FrictionSettings
 import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.NopeDatabase
@@ -17,13 +15,11 @@ import com.piercingxx.nopemode.data.OverrideMapper
 import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityHomeBinding
 import com.piercingxx.nopemode.schedule.AlarmScheduler
-import com.piercingxx.nopemode.schedule.BreakStarter
 import com.piercingxx.nopemode.service.RingerPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -40,12 +36,10 @@ class HomeActivity : AppCompatActivity() {
         val active: Boolean,
         val override: Override,
         val blockedCount: Int,
-        val breakBlockedReason: String?,
     )
 
     private lateinit var binding: ActivityHomeBinding
     private lateinit var deviceOwner: DeviceOwnerManager
-    private var onBreak = false
     private var suppressMasterCallback = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,11 +49,11 @@ class HomeActivity : AppCompatActivity() {
         deviceOwner = DeviceOwnerManager(this)
 
         binding.blockedAppsButton.setOnClickListener { open(BlockedAppsActivity::class.java) }
-        binding.schedulesButton.setOnClickListener { open(SchedulesActivity::class.java) }
+        binding.scheduleButton.setOnClickListener { open(SchedulesActivity::class.java) }
         binding.settingsButton.setOnClickListener { open(SettingsActivity::class.java) }
         binding.backupButton.setOnClickListener { open(BackupActivity::class.java) }
         binding.setupButton.setOnClickListener { open(SetupActivity::class.java) }
-        binding.breakButton.setOnClickListener { onBreakClicked() }
+        binding.turnOnNowButton.setOnClickListener { onTurnOnNowClicked() }
         binding.masterSwitch.setOnCheckedChangeListener { _, checked ->
             // Ignore the echo from refresh() setting the switch programmatically.
             // Guarding on isPressed instead looked equivalent but silently drops
@@ -80,48 +74,6 @@ class HomeActivity : AppCompatActivity() {
     }
 
     /**
-     * Focus Mode parity (design §1): a bounded break, offered as 5/15/30.
-     *
-     * While a break is running the same button ends it — changing your mind is
-     * not a bypass, and the alternative is a dead control for the whole break.
-     */
-    private fun onBreakClicked() {
-        if (onBreak) {
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) { BreakStarter.end(applicationContext) }
-                refresh()
-            }
-            return
-        }
-
-        val choices = FrictionSettings.BREAK_CHOICES
-        AlertDialog.Builder(this)
-            .setTitle(R.string.break_choose_title)
-            .setItems(choices.map { getString(R.string.break_minutes, it) }.toTypedArray()) { _, which ->
-                startBreak(choices[which])
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun startBreak(minutes: Int) {
-        lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                BreakStarter.start(applicationContext, minutes)
-            }
-            // A refusal is shown, never swallowed: the frictions are the point,
-            // so the user has to be told which one stopped them (§9, R8).
-            if (result is BreakStarter.Result.Refused) {
-                AlertDialog.Builder(this@HomeActivity)
-                    .setMessage(result.reason)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show()
-            }
-            refresh()
-        }
-    }
-
-    /**
      * Whether the Quiet Ringer can actually restrict the ringer.
      *
      * Checked by creating the rule, not by asking for the grant:
@@ -134,6 +86,28 @@ class HomeActivity : AppCompatActivity() {
             RingerPolicy(applicationContext)
                 .ensureRule(quietRingerEnabled = true, allowRepeatCallers = true) != null
         }.getOrDefault(false)
+
+    /**
+     * Focus Mode's "Turn on now": force Nope-Mode active outside its schedule,
+     * and clear that force when it is already on.
+     *
+     * Writing ForceOn is what the tile does too, so both go through the same
+     * override and the same reconcile (D8) rather than two paths that can
+     * disagree.
+     */
+    private fun onTurnOnNowClicked() {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                val db = NopeDatabase.get(applicationContext)
+                val current = OverrideMapper.toOverride(db.appStateDao().get())
+                val next =
+                    if (current is Override.ForceOn) Override.None else Override.ForceOn(null)
+                db.appStateDao().upsert(OverrideMapper.toAppState(next))
+                runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
+            }
+            refresh()
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -160,12 +134,8 @@ class HomeActivity : AppCompatActivity() {
                 val override = OverrideMapper.toOverride(db.appStateDao().get())
                 val blockedCount = db.blockedAppDao().observeAll().first().size
                 val active = NopeController.derive(LocalDateTime.now(), schedules, override)
-                val reason = BreakStarter.blockedReason(applicationContext)
-                HomeState(active, override, blockedCount, reason)
+                HomeState(active, override, blockedCount)
             }
-            onBreak = state.override is Override.Break &&
-                Instant.now() < (state.override as Override.Break).until
-
             binding.stateText.text = HomeStateText.stateText(state.active, state.override)
             // BRAND-GUIDE §3.1, the rule of one accent: Signal green marks the
             // single thing the eye should land on. On this screen that is
@@ -178,14 +148,9 @@ class HomeActivity : AppCompatActivity() {
             )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.blockedCount)
 
-            binding.breakButton.text =
-                getString(if (onBreak) R.string.end_break else R.string.take_a_break)
-            // Enabled while on a break so it can be ended; otherwise only when
-            // the frictions allow a new one.
-            binding.breakButton.isEnabled = onBreak || state.breakBlockedReason == null
-            val showReason = !onBreak && state.breakBlockedReason != null
-            binding.breakReasonText.visibility = if (showReason) View.VISIBLE else View.GONE
-            binding.breakReasonText.text = state.breakBlockedReason.orEmpty()
+            val forced = state.override is Override.ForceOn
+            binding.turnOnNowButton.text =
+                getString(if (forced) R.string.turn_off_now else R.string.turn_on_now)
 
             // Design §18.4 / R8: a Quiet Ringer that silently does nothing is
             // the worst outcome, so say it out loud rather than let the screen

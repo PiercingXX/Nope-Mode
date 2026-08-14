@@ -32,4 +32,10 @@
     <string name="dnd_missing">Quiet Ringer needs Do Not Disturb access. Without it the ringer is never restricted.</string>
     <string name="master_enabled">Nope-Mode enabled</string>
     <string name="master_disabled_note">Nope-Mode is off entirely. Nothing is suspended and no schedule applies.</string>
+    <string name="home_blurb">When you need time to focus, Nope-Mode pauses distracting apps and hides their notifications.</string>
+    <string name="set_a_schedule">Set a schedule</string>
+    <string name="turn_on_now">Turn on now</string>
+    <string name="turn_off_now">Turn off now</string>
+    <string name="your_distracting_apps">Your distracting apps</string>
+    <string name="select_more_apps">Select more apps</string>
 </resources>

@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Home, in PiercingXX house style (BRAND-GUIDE.md §3, §4).
-
-  Ink ground, mono type, left-aligned, hierarchy from opacity rather than from
-  colour. The nav is a hairline-separated list, not five filled buttons — §1
-  calls for minimal / low-noise surfaces where the interface gets out of the way,
-  and five saturated pills would break §3.1's rule of one accent.
+  Home, shaped like Focus Mode's single screen: what it does, when it runs,
+  a turn-on-now control, then the app list. In PiercingXX house style
+  (BRAND-GUIDE.md §3, §4) — Ink ground, mono, one accent.
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -33,23 +30,55 @@
             style="@style/Text.Muted"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp" />
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/home_blurb" />
+
+        <!-- Design §11 requires a master toggle; without it a tile tap inside a
+             schedule window left no way to turn enforcement off at all. -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/masterSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="@string/font_body"
+            android:text="@string/master_enabled"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/scheduleButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/set_a_schedule" />
+
+        <Button
+            android:id="@+id/turnOnNowButton"
+            style="@style/Button.Signal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/turn_on_now" />
 
         <TextView
             android:id="@+id/tierText"
-            style="@style/Text.Body"
+            style="@style/Text.Muted"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="18dp" />
 
-        <!-- Warnings are the one place a second colour is allowed, and only
-             because §3.5 status colours are semantic, never decorative. -->
         <TextView
             android:id="@+id/warningText"
             style="@style/Text.Warn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="10dp"
             android:visibility="gone" />
 
         <TextView
@@ -57,44 +86,13 @@
             style="@style/Text.Muted"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="10dp"
             android:textIsSelectable="true" />
-
-        <!-- Design §11 requires a master toggle on Home. Without it, a user
-             inside a schedule window has no off switch at all: the tile only
-             flips ForceOn, and a break is bounded and rate-limited. -->
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/masterSwitch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:fontFamily="@string/font_body"
-            android:text="@string/master_enabled"
-            android:textColor="@color/pxx_white_90"
-            android:textSize="15sp" />
-
-        <!-- Focus Mode parity (design §1): a bounded break, offered as 5/15/30.
-             Signal green because while active this is the action on the screen. -->
-        <Button
-            android:id="@+id/breakButton"
-            style="@style/Button.Signal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/take_a_break" />
-
-        <TextView
-            android:id="@+id/breakReasonText"
-            style="@style/Text.Muted"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:visibility="gone" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="22dp"
             android:background="@color/pxx_white_10" />
 
         <Button
@@ -103,14 +101,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/blocked_apps_title" />
-        <View style="@style/Divider" />
-
-        <Button
-            android:id="@+id/schedulesButton"
-            style="@style/Nav.Row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/schedules_title" />
         <View style="@style/Divider" />
 
         <Button

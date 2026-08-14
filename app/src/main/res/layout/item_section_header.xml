@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Section heading: "Your distracting apps" / "Select more apps". -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/headerText"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fontFamily="@string/font_body"
+    android:letterSpacing="0.04"
+    android:paddingTop="22dp"
+    android:paddingBottom="8dp"
+    android:textColor="@color/pxx_signal"
+    android:textSize="13sp" />

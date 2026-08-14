@@ -3,10 +3,13 @@ package com.piercingxx.nopemode.service
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.piercingxx.nopemode.R
+import android.os.Build
+import com.piercingxx.nopemode.core.NextBoundary
 import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
+import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.schedule.AlarmScheduler
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -52,12 +55,24 @@ class NopeTileService : TileService() {
         val db = NopeDatabase.get(applicationContext)
         val override = runBlocking { OverrideMapper.toOverride(db.appStateDao().get()) }
         val schedules = runBlocking { db.scheduleDao().observeAll().first() }
-        val active = NopeController.derive(LocalDateTime.now(ZoneId.systemDefault()), schedules, override)
+        val now = LocalDateTime.now(ZoneId.systemDefault())
+        val enabled = SettingsStore(applicationContext).isEnabled()
+        val active = enabled &&
+            NopeController.derive(now, schedules, override)
         tile.state = when (TileState.state(active)) {
             TileState.State.ACTIVE -> Tile.STATE_ACTIVE
             TileState.State.INACTIVE -> Tile.STATE_INACTIVE
         }
         tile.label = getString(if (active) R.string.tile_active else R.string.tile_inactive)
+        // Focus Mode's tile shows when it ends; the shade is exactly where that
+        // matters, since the alternative is opening the app to find out.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.subtitle = TileState.subtitle(
+                isActive = active,
+                override = override,
+                endsAt = if (enabled) NextBoundary.next(now, schedules) else null,
+            )
+        }
         tile.updateTile()
     }
 }
