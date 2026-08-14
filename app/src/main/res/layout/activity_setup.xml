@@ -4,27 +4,30 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/pxx_ink"
     android:padding="24dp">
 
     <TextView
+        android:fontFamily="@string/font_body"
         android:id="@+id/titleText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/setup_title"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:textColor="@color/pxx_paper"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
+        android:fontFamily="@string/font_body"
         android:id="@+id/setupText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:textSize="13sp"
-        android:fontFamily="monospace"
-        android:textColor="@android:color/darker_gray"
+        
+        android:textColor="@color/pxx_white_50"
         android:textIsSelectable="true"
         app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintStart_toStartOf="parent"

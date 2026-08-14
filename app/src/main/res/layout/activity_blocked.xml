@@ -4,26 +4,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/pxx_ink"
     android:padding="24dp">
 
     <TextView
+        android:fontFamily="@string/font_body"
         android:id="@+id/blockedText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="48sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:textColor="@color/pxx_paper"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
+        android:fontFamily="@string/font_body"
         android:id="@+id/countdownText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:textSize="18sp"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="@color/pxx_white_50"
         app:layout_constraintTop_toBottomOf="@id/blockedText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

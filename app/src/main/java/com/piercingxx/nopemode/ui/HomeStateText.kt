@@ -42,6 +42,20 @@ object HomeStateText {
         else -> "$count apps blocked."
     }
 
+    /**
+     * The Quiet Ringer warning, or null when it is genuinely working.
+     *
+     * Design §18.4 and R8: never let the screen imply calls are being filtered
+     * while the zen rule is inert. Silence here would be the failure.
+     */
+    fun quietRingerWarning(working: Boolean): String? =
+        if (working) {
+            null
+        } else {
+            "Quiet Ringer is OFF — calls ring normally. " +
+                "Grant Do Not Disturb access in Settings to restrict the ringer."
+        }
+
     /** The enforcement tier line (design §5) — honest about what tier is live. */
     fun tierText(isDeviceOwner: Boolean): String =
         if (isDeviceOwner) {
