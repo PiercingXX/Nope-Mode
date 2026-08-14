@@ -37,6 +37,17 @@ class SettingsStore(context: Context) {
         prefs.edit().putBoolean(KEY_ENABLED, enabled).apply()
     }
 
+    /**
+     * The background preset (BRAND-GUIDE.md §3.3), keyed by the same names
+     * PiercingXX-Launcher uses so the two apps agree on what "graphite" means.
+     */
+    fun backgroundPreset(): String =
+        prefs.getString(KEY_BG_PRESET, null) ?: "amoled"
+
+    fun setBackgroundPreset(preset: String) {
+        prefs.edit().putString(KEY_BG_PRESET, preset).apply()
+    }
+
     fun load(): FrictionSettings {
         val defaults = FrictionSettings()
         return FrictionSettings(
@@ -66,5 +77,6 @@ class SettingsStore(context: Context) {
         const val KEY_QUIET_RINGER = "quiet_ringer_enabled"
         const val KEY_REPEAT_CALLERS = "allow_repeat_callers"
         const val KEY_ENABLED = "master_enabled"
+        const val KEY_BG_PRESET = "background_preset"
     }
 }

@@ -10,7 +10,7 @@ import com.piercingxx.nopemode.databinding.ActivitySetupBinding
  * the exact ADB command to provision (design §2.2). Provisioning can only be
  * done on a device with zero accounts, so the command is surfaced verbatim.
  */
-class SetupActivity : AppCompatActivity() {
+class SetupActivity : BrandActivity() {
 
     private lateinit var binding: ActivitySetupBinding
     private lateinit var deviceOwner: DeviceOwnerManager
@@ -19,6 +19,7 @@ class SetupActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySetupBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
         deviceOwner = DeviceOwnerManager(this)
     }
 

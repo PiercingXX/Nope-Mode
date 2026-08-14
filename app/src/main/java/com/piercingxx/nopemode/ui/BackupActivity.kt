@@ -19,7 +19,7 @@ import com.piercingxx.nopemode.databinding.ActivityBackupBinding
  * The file picker / on-device wiring is deferred to the operator's on-device
  * check (design §16); this screen exists so the flow is reachable.
  */
-class BackupActivity : AppCompatActivity() {
+class BackupActivity : BrandActivity() {
 
     private lateinit var binding: ActivityBackupBinding
 
@@ -27,6 +27,7 @@ class BackupActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBackupBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
     }
 
     /**

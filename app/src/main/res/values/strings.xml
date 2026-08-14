@@ -42,4 +42,5 @@
     <string name="delete">Delete</string>
     <string name="start_at">Start %1$s</string>
     <string name="end_at">End %1$s</string>
+    <string name="setting_background">Background</string>
 </resources>

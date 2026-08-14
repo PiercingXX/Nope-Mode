@@ -30,7 +30,7 @@ import java.time.LocalDateTime
  * as a reconcile trigger, so `onResume` reconciles before reading state back;
  * that keeps the screen honest if an alarm was missed while the app was away.
  */
-class HomeActivity : AppCompatActivity() {
+class HomeActivity : BrandActivity() {
 
     /** Everything one refresh needs, so the UI reads named fields not a Triple. */
     private data class HomeState(
@@ -47,6 +47,7 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
         deviceOwner = DeviceOwnerManager(this)
 
         binding.blockedAppsButton.setOnClickListener { open(BlockedAppsActivity::class.java) }
@@ -154,10 +155,14 @@ class HomeActivity : AppCompatActivity() {
             // single thing the eye should land on. On this screen that is
             // whether Nope-Mode is actually on.
             binding.stateText.setTextColor(
-                ContextCompat.getColor(
-                    this@HomeActivity,
-                    if (state.active) R.color.pxx_signal else R.color.pxx_paper,
-                )
+                if (state.active) {
+                    BackgroundTheme.accentTextColor(
+                        preset,
+                        ContextCompat.getColor(this@HomeActivity, R.color.pxx_signal),
+                    )
+                } else {
+                    BackgroundTheme.colors(preset).text
+                }
             )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.blockedCount)
 

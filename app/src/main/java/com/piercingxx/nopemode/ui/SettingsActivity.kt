@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.RadioButton
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.piercingxx.nopemode.R
@@ -34,7 +35,7 @@ import java.time.LocalDateTime
  * cannot find reads as a missing feature, one that is greyed with a reason
  * reads as a rule.
  */
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : BrandActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private var editable = true
@@ -43,6 +44,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
 
         FrictionSettings.BREAK_CHOICES.forEach { minutes ->
             binding.breakLengthGroup.addView(
@@ -55,6 +57,8 @@ class SettingsActivity : AppCompatActivity() {
             )
         }
 
+        buildThemeStrip()
+
         binding.grantDndButton.setOnClickListener {
             // The grant is a user action in system Settings — there is no API to
             // award it to ourselves, device owner or not.
@@ -65,6 +69,40 @@ class SettingsActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         load()
+    }
+
+    /**
+     * The background preset strip, mirroring PiercingXX-Launcher's preview
+     * strip: one swatch per preset, in the same order, each painted in its own
+     * ground so the choice is made by looking rather than by reading a name.
+     *
+     * Not a friction setting, so it is never locked — appearance has nothing to
+     * do with the anti-bypass rules in design §9.
+     */
+    private fun buildThemeStrip() {
+        val strip = binding.themeStrip
+        strip.removeAllViews()
+        BackgroundTheme.PRESETS.forEach { (key, colors) ->
+            val swatch = TextView(this).apply {
+                text = BackgroundTheme.LABELS[key]?.take(1) ?: key.take(1)
+                gravity = android.view.Gravity.CENTER
+                textSize = 13f
+                setTextColor(BackgroundTheme.contrastTextColor(colors.background))
+                setBackgroundColor(colors.background)
+                contentDescription = BackgroundTheme.LABELS[key]
+                val size = (44 * resources.displayMetrics.density).toInt()
+                layoutParams = android.widget.LinearLayout.LayoutParams(size, size).apply {
+                    marginEnd = (8 * resources.displayMetrics.density).toInt()
+                }
+                setOnClickListener {
+                    SettingsStore(this@SettingsActivity).setBackgroundPreset(key)
+                    // Repaint immediately; the launcher does not restart either.
+                    applyTheme()
+                    buildThemeStrip()
+                }
+            }
+            strip.addView(swatch)
+        }
     }
 
     override fun onPause() {

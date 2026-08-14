@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
  *
  * Text formatting lives in [ScheduleText], which is pure and tested.
  */
-class SchedulesActivity : AppCompatActivity() {
+class SchedulesActivity : BrandActivity() {
 
     private lateinit var binding: ActivitySchedulesBinding
     private val adapter = ScheduleAdapter(
@@ -54,6 +54,7 @@ class SchedulesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySchedulesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
 
         binding.scheduleList.layoutManager = LinearLayoutManager(this)
         binding.scheduleList.adapter = adapter

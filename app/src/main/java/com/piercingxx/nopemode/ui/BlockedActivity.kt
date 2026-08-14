@@ -11,7 +11,7 @@ import java.time.Instant
  * running it shows the remaining countdown; otherwise it states that Nope-Mode
  * is active. The countdown is derived from the break's end instant (design §9).
  */
-class BlockedActivity : AppCompatActivity() {
+class BlockedActivity : BrandActivity() {
 
     private lateinit var binding: ActivityBlockedBinding
 
@@ -19,6 +19,7 @@ class BlockedActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBlockedBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
     }
 
     override fun onResume() {

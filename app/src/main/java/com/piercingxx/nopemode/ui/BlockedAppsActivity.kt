@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.piercingxx.nopemode.data.BlockedApp
 import com.piercingxx.nopemode.data.NopeDatabase
+import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityBlockedAppsBinding
 import com.piercingxx.nopemode.databinding.ItemBlockedAppBinding
 import com.piercingxx.nopemode.databinding.ItemSectionHeaderBinding
@@ -41,7 +42,7 @@ import kotlinx.coroutines.withContext
  * Every edit reconciles immediately (design §7.1), so checking an app while
  * Nope-Mode is already active suspends it there and then.
  */
-class BlockedAppsActivity : AppCompatActivity() {
+class BlockedAppsActivity : BrandActivity() {
 
     private lateinit var binding: ActivityBlockedAppsBinding
     private val adapter = AppAdapter(::onRowClicked)
@@ -56,6 +57,7 @@ class BlockedAppsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityBlockedAppsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        applyTheme()
 
         binding.appList.layoutManager = LinearLayoutManager(this)
         binding.appList.adapter = adapter
@@ -183,7 +185,15 @@ class BlockedAppsActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             when (val item = items[position]) {
-                is AppPicker.Item.Header -> (holder as HeaderVH).binding.headerText.text = item.title
+                is AppPicker.Item.Header -> (holder as HeaderVH).binding.headerText.apply {
+                    text = item.title
+                    setTextColor(
+                        BackgroundTheme.accentTextColor(
+                            SettingsStore(context).backgroundPreset(),
+                            context.getColor(com.piercingxx.nopemode.R.color.pxx_signal),
+                        )
+                    )
+                }
                 is AppPicker.Item.App -> bindApp((holder as AppVH).binding, item.row)
             }
         }
