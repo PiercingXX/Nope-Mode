@@ -37,6 +37,30 @@ object TileState {
     fun toggle(override: Override): Override =
         if (override is Override.ForceOn) Override.None else Override.ForceOn(null)
 
+    /** What a tile tap should write: the master flag and the override. */
+    data class Tap(val enabled: Boolean, val override: Override)
+
+    /**
+     * The tile is a single "is it on right now" toggle, so a tap has to be able
+     * to reach both answers on its own.
+     *
+     * Writing only the override is not enough. With the master switch off,
+     * reconcile ignores schedules and overrides alike, so a tap wrote a
+     * `ForceOn` that changed nothing and the tile could not be turned on from
+     * the shade at all. Turning on therefore re-enables the master too.
+     *
+     * Turning off clears the `ForceOn`, and — when the schedule alone would
+     * keep it active — drops the master as well. A tile that says it turned
+     * something off and left it running is the same false report R8 forbids
+     * everywhere else. Home's master switch is the way back on.
+     */
+    fun onTap(isActive: Boolean, override: Override, activeBySchedule: Boolean): Tap =
+        if (isActive) {
+            Tap(enabled = !activeBySchedule, override = Override.None)
+        } else {
+            Tap(enabled = true, override = Override.ForceOn(null))
+        }
+
     /**
      * The tile's second line: when it turns off, the way Focus Mode's tile reads
      * "Off at 5:00 PM".

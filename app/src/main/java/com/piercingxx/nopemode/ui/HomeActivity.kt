@@ -16,6 +16,7 @@ import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityHomeBinding
 import com.piercingxx.nopemode.schedule.AlarmScheduler
 import com.piercingxx.nopemode.service.RingerPolicy
+import com.piercingxx.nopemode.service.TileState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -100,9 +101,16 @@ class HomeActivity : AppCompatActivity() {
             withContext(Dispatchers.IO) {
                 val db = NopeDatabase.get(applicationContext)
                 val current = OverrideMapper.toOverride(db.appStateDao().get())
-                val next =
-                    if (current is Override.ForceOn) Override.None else Override.ForceOn(null)
-                db.appStateDao().upsert(OverrideMapper.toAppState(next))
+                // Same decision the tile makes, so the two controls cannot
+                // disagree about what a tap means.
+                val schedules = db.scheduleDao().observeAll().first()
+                val now = LocalDateTime.now()
+                val settings = SettingsStore(applicationContext)
+                val activeBySchedule = NopeController.derive(now, schedules, Override.None)
+                val isActive = settings.isEnabled() && NopeController.derive(now, schedules, current)
+                val tap = TileState.onTap(isActive, current, activeBySchedule)
+                settings.setEnabled(tap.enabled)
+                db.appStateDao().upsert(OverrideMapper.toAppState(tap.override))
                 runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
             }
             refresh()
@@ -133,7 +141,12 @@ class HomeActivity : AppCompatActivity() {
                 val schedules = db.scheduleDao().observeAll().first()
                 val override = OverrideMapper.toOverride(db.appStateDao().get())
                 val blockedCount = db.blockedAppDao().observeAll().first().size
-                val active = NopeController.derive(LocalDateTime.now(), schedules, override)
+                // The master switch gates everything, so the headline has to
+                // consult it too. Deriving from schedules alone had Home saying
+                // "Nope-Mode is ON" while the master was off and nothing at all
+                // was suspended — the exact false report R8 forbids.
+                val active = SettingsStore(applicationContext).isEnabled() &&
+                    NopeController.derive(LocalDateTime.now(), schedules, override)
                 HomeState(active, override, blockedCount)
             }
             binding.stateText.text = HomeStateText.stateText(state.active, state.override)
@@ -148,9 +161,11 @@ class HomeActivity : AppCompatActivity() {
             )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.blockedCount)
 
-            val forced = state.override is Override.ForceOn
+            // Label follows the ACTIVE state, not the override. A stale ForceOn
+            // left over from a tile tap had it reading "Turn off now" on a
+            // screen that said Nope-Mode was off.
             binding.turnOnNowButton.text =
-                getString(if (forced) R.string.turn_off_now else R.string.turn_on_now)
+                getString(if (state.active) R.string.turn_off_now else R.string.turn_on_now)
 
             // Design §18.4 / R8: a Quiet Ringer that silently does nothing is
             // the worst outcome, so say it out loud rather than let the screen

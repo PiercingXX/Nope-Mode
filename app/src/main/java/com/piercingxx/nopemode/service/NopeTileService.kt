@@ -41,9 +41,17 @@ class NopeTileService : TileService() {
         super.onClick()
         val db = NopeDatabase.get(applicationContext)
         val appStateDao = db.appStateDao()
+        val settings = SettingsStore(applicationContext)
         val current = runBlocking { OverrideMapper.toOverride(appStateDao.get()) }
-        val next: Override = TileState.toggle(current)
-        runBlocking { appStateDao.upsert(OverrideMapper.toAppState(next)) }
+        val schedules = runBlocking { db.scheduleDao().observeAll().first() }
+        val now = LocalDateTime.now(ZoneId.systemDefault())
+
+        val activeBySchedule = NopeController.derive(now, schedules, Override.None)
+        val isActive = settings.isEnabled() && NopeController.derive(now, schedules, current)
+
+        val tap = TileState.onTap(isActive, current, activeBySchedule)
+        settings.setEnabled(tap.enabled)
+        runBlocking { appStateDao.upsert(OverrideMapper.toAppState(tap.override)) }
         // Route through reconcile so enforcement follows the derived state.
         AlarmScheduler.from(applicationContext).reconcileAndApply()
         refresh()
