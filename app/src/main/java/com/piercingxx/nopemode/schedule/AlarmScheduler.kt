@@ -6,6 +6,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.util.Log
 import com.piercingxx.nopemode.core.Override
+import com.piercingxx.nopemode.admin.BlockedMessage
+import com.piercingxx.nopemode.admin.NopeDeviceAdminReceiver
 import com.piercingxx.nopemode.data.AppStateDao
 import com.piercingxx.nopemode.data.BlockedAppDao
 import com.piercingxx.nopemode.data.NopeDatabase
@@ -92,7 +94,28 @@ class AlarmScheduler private constructor(
         }
 
         applyRinger(plan.active)
+        applyBlockedMessage(plan.active, plan.nextBoundary)
         arm(plan)
+    }
+
+    /**
+     * Put Nope-Mode's own words on the platform's blocked dialog.
+     *
+     * Opening a suspended app raises Settings' ActionDisabledByAdminDialog,
+     * whose look is not ours to change. Its body text is: a device owner's
+     * short support message replaces "For more info, contact your IT admin",
+     * which is misleading here — there is no IT admin, just a schedule the user
+     * set (design §11, BRAND-GUIDE §6).
+     */
+    private fun applyBlockedMessage(active: Boolean, endsAt: LocalDateTime?) {
+        runCatching {
+            val admin = NopeDeviceAdminReceiver.componentName(context)
+            val message = BlockedMessage.shortSupportMessage(active, endsAt)
+            // Both: the short one is what the blocked dialog renders, the long
+            // one is what Settings shows on the device-admin detail screen.
+            dpm.setShortSupportMessage(admin, message)
+            dpm.setLongSupportMessage(admin, message)
+        }.onFailure { Log.w(TAG, "could not set support message", it) }
     }
 
     /**
