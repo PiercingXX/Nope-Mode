@@ -44,6 +44,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Long-pressing the Quick Settings tile opens this screen. The
+                 system only offers that when an activity handles the tile's
+                 preferences action. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
         </activity>
 
         <!-- WS7 screens (design §11). Reachable from the home screen and from
