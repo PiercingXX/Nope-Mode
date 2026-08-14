@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  One app row. Checkbox tints Signal green when checked (the theme's
-  colorControlActivated) — that green tick is the single saturated thing on the
-  screen, which is exactly the job §3.1 gives the accent.
+  One app row, shaped like Focus Mode's: icon, name, checkbox on the right.
+  Design §11 asks for icons and they were missing — a package name is not how
+  anyone recognises an app.
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -10,16 +10,15 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingTop="14dp"
-    android:paddingBottom="14dp">
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
-    <CheckBox
-        android:id="@+id/appCheck"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="14dp"
-        android:clickable="false"
-        android:focusable="false" />
+    <ImageView
+        android:id="@+id/appIcon"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="@null" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -35,21 +34,13 @@
             android:textColor="@color/pxx_paper"
             android:textSize="16sp" />
 
-        <TextView
-            android:id="@+id/appPackage"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@string/font_body"
-            android:textColor="@color/pxx_white_50"
-            android:textSize="12sp" />
-
-        <!-- Warn amber, because a reason a row cannot be picked (or a caution
-             about picking it) is status, not decoration (§3.5). -->
+        <!-- Warn amber: a reason a row cannot be picked, or a caution about
+             picking it, is status rather than decoration (§3.5). -->
         <TextView
             android:id="@+id/appReason"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:fontFamily="@string/font_body"
             android:lineSpacingMultiplier="1.25"
             android:textColor="@color/pxx_warn"
@@ -57,5 +48,13 @@
             android:visibility="gone" />
 
     </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/appCheck"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:clickable="false"
+        android:focusable="false" />
 
 </LinearLayout>

@@ -87,6 +87,59 @@ object AppPicker {
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
     }
 
+    /** A list entry: either a section heading or an app. */
+    sealed interface Item {
+        data class Header(val title: String) : Item
+        data class App(val row: Row) : Item
+    }
+
+    /**
+     * The list split the way Focus Mode presents it: the apps you have already
+     * chosen at the top under their own heading, everything else below.
+     *
+     * Selected-first matters because the chosen set is the thing you come back
+     * to change; making it hunt through 58 alphabetical entries to find the four
+     * that are on is the difference between a list and a control panel.
+     *
+     * [collapsed] shows only the chosen apps plus the heading for the rest,
+     * mirroring the "Show all N apps" affordance. A search [query] always
+     * expands, since filtering already narrows the list.
+     */
+    fun sections(
+        installed: List<InstalledApp>,
+        blocked: Set<String>,
+        hardBlocked: Map<String, String>,
+        requiresConfirmation: Map<String, String>,
+        advisories: Map<String, String> = emptyMap(),
+        query: String = "",
+        collapsed: Boolean = false,
+        chosenHeader: String = "Your distracting apps",
+        moreHeader: String = "Select more apps",
+    ): List<Item> {
+        val rows = rows(installed, blocked, hardBlocked, requiresConfirmation, advisories, query)
+        val (chosen, rest) = rows.partition { it.checked }
+
+        val items = mutableListOf<Item>()
+        if (chosen.isNotEmpty()) {
+            items += Item.Header(chosenHeader)
+            items += chosen.map { Item.App(it) }
+        }
+        if (rest.isNotEmpty()) {
+            items += Item.Header(moreHeader)
+            if (!collapsed || query.isNotBlank()) {
+                items += rest.map { Item.App(it) }
+            }
+        }
+        return items
+    }
+
+    /** How many apps the "show all" affordance would reveal. */
+    fun hiddenCount(
+        installed: List<InstalledApp>,
+        blocked: Set<String>,
+        hardBlocked: Map<String, String>,
+    ): Int = installed.count { it.packageName !in blocked || it.packageName in hardBlocked }
+
     /**
      * Packages that must be dropped from an existing blocked list because the
      * platform would refuse them. Used to prune rows left behind when a package

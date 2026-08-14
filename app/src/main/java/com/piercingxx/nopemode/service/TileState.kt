@@ -1,6 +1,8 @@
 package com.piercingxx.nopemode.service
 
 import com.piercingxx.nopemode.core.Override
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * WS8 — the pure decision slice of the Quick Settings tile (design §11.1).
@@ -34,4 +36,32 @@ object TileState {
      */
     fun toggle(override: Override): Override =
         if (override is Override.ForceOn) Override.None else Override.ForceOn(null)
+
+    /**
+     * The tile's second line: when it turns off, the way Focus Mode's tile reads
+     * "Off at 5:00 PM".
+     *
+     * A tile that only says "on" makes you open the app to learn the one thing
+     * you actually want from the shade — when it ends. An indefinite `ForceOn`
+     * has no end, and saying so is the honest answer rather than inventing the
+     * next schedule boundary it will not obey.
+     *
+     * [endsAt] is the next boundary at which the active state flips off, already
+     * derived by the caller; null means there is no such boundary.
+     */
+    fun subtitle(
+        isActive: Boolean,
+        override: Override,
+        endsAt: LocalDateTime?,
+        formatter: DateTimeFormatter = DEFAULT_TIME_FORMAT,
+    ): String {
+        if (!isActive) return "Off"
+        if (override is Override.ForceOn && override.until == null) return "Always on"
+        if (override is Override.Break) return "On a break"
+        return endsAt?.let { "Off at ${formatter.format(it)}" } ?: "Always on"
+    }
+
+    /** 12-hour with AM/PM, matching how the shade renders times. */
+    private val DEFAULT_TIME_FORMAT: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("h:mm a")
 }

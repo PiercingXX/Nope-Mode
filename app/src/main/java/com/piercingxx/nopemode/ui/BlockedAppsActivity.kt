@@ -1,6 +1,6 @@
 package com.piercingxx.nopemode.ui
 
-import android.app.AlertDialog
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -11,13 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.data.BlockedApp
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.databinding.ActivityBlockedAppsBinding
 import com.piercingxx.nopemode.databinding.ItemBlockedAppBinding
+import com.piercingxx.nopemode.databinding.ItemSectionHeaderBinding
 import com.piercingxx.nopemode.enforce.ProtectedPackages
-import com.piercingxx.nopemode.enforce.SuspendablePackages.Exclusion
 import com.piercingxx.nopemode.schedule.AlarmScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -25,20 +24,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * WS7 — the blocked-apps screen (design §11, §4.1).
+ * WS7 — the blocked-apps screen (design §11, §4.1), shaped like Focus Mode's:
+ * the apps you have already chosen at the top under their own heading, the rest
+ * below, every row carrying its icon.
  *
- * This is the one screen without which the product does not exist: it is the
- * only writer to `blocked_app`, and everything downstream — the reconcile loop,
- * the enforcer, the tile — operates on the set it produces.
+ * This is the only writer to `blocked_app`, and everything downstream — the
+ * reconcile loop, the enforcer, the tile — operates on the set it produces.
  *
- * Every launchable app is listed. The ONLY rows that cannot be selected are the
- * ones the platform itself refuses — verified on-device: Android logs
+ * The only rows that cannot be selected are the ones the platform itself
+ * refuses — verified on-device, Android logs
  * 'Cannot suspend package "...": is the default dialer' and leaves it running.
- * Those are shown disabled with the reason inline rather than hidden, so the
- * user can never assume an app is blocked when it isn't (design §4.1, R8).
- *
- * Nothing else is gated. This is the user's device; if they want to block their
- * SMS app they can, and the row simply carries a caution about 2FA codes.
+ * Those stay visible and disabled with the reason inline rather than vanishing,
+ * so the user can never assume an app is blocked when it isn't (§4.1, R8).
+ * Nothing else is gated: it is the user's device.
  *
  * Every edit reconciles immediately (design §7.1), so checking an app while
  * Nope-Mode is already active suspends it there and then.
@@ -51,6 +49,7 @@ class BlockedAppsActivity : AppCompatActivity() {
     private var installed: List<AppPicker.InstalledApp> = emptyList()
     private var protections = ProtectedPackages.Protections(emptyMap(), emptyMap(), emptyMap())
     private var blocked: Set<String> = emptySet()
+    private var icons: Map<String, Drawable> = emptyMap()
     private var query: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,20 +73,34 @@ class BlockedAppsActivity : AppCompatActivity() {
         load()
     }
 
+    private data class Loaded(
+        val installed: List<AppPicker.InstalledApp>,
+        val protections: ProtectedPackages.Protections,
+        val blocked: Set<String>,
+        val icons: Map<String, Drawable>,
+    )
+
     private fun load() {
         lifecycleScope.launch {
             val db = NopeDatabase.get(applicationContext)
             val loaded = withContext(Dispatchers.IO) {
-                Triple(
-                    ProtectedPackages.launchableApps(packageManager)
-                        .map { AppPicker.InstalledApp(it.first, it.second) },
-                    ProtectedPackages.discover(this@BlockedAppsActivity),
-                    db.blockedAppDao().observeAll().first().map { it.packageName }.toSet(),
+                val apps = ProtectedPackages.launchableApps(packageManager)
+                Loaded(
+                    installed = apps.map { AppPicker.InstalledApp(it.first, it.second) },
+                    protections = ProtectedPackages.discover(this@BlockedAppsActivity),
+                    blocked = db.blockedAppDao().observeAll().first().map { it.packageName }.toSet(),
+                    // Icons are resolved once here rather than per bind: loading
+                    // one hits the package manager, and doing that on every row
+                    // recycle janks the scroll.
+                    icons = apps.mapNotNull { (pkg, _) ->
+                        runCatching { pkg to packageManager.getApplicationIcon(pkg) }.getOrNull()
+                    }.toMap(),
                 )
             }
-            installed = loaded.first
-            protections = loaded.second
-            blocked = loaded.third
+            installed = loaded.installed
+            protections = loaded.protections
+            blocked = loaded.blocked
+            icons = loaded.icons
 
             // An app can become protected after it was blocked — the user
             // switching to a keyboard they had already selected, say. Drop those
@@ -104,7 +117,7 @@ class BlockedAppsActivity : AppCompatActivity() {
     }
 
     private fun render() {
-        val rows = AppPicker.rows(
+        val items = AppPicker.sections(
             installed = installed,
             blocked = blocked,
             hardBlocked = protections.hardBlocked,
@@ -112,27 +125,13 @@ class BlockedAppsActivity : AppCompatActivity() {
             advisories = protections.advisories,
             query = query,
         )
-        adapter.submit(rows)
-        binding.emptyText.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
+        adapter.submit(items, icons)
+        binding.emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun onRowClicked(row: AppPicker.Row) {
         if (!row.selectable) return
-        if (!row.checked && row.exclusion is Exclusion.RequiresConfirmation) {
-            confirmThenToggle(row)
-            return
-        }
         toggle(row)
-    }
-
-    /** Never reachable by bulk-select; the user must say yes to this one. */
-    private fun confirmThenToggle(row: AppPicker.Row) {
-        AlertDialog.Builder(this)
-            .setTitle(row.label)
-            .setMessage(row.reason)
-            .setPositiveButton(R.string.blocked_apps_confirm_block) { _, _ -> toggle(row) }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
     }
 
     private fun toggle(row: AppPicker.Row) {
@@ -157,42 +156,63 @@ class BlockedAppsActivity : AppCompatActivity() {
 
     private class AppAdapter(
         private val onClick: (AppPicker.Row) -> Unit,
-    ) : RecyclerView.Adapter<AppAdapter.VH>() {
+    ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-        private var rows: List<AppPicker.Row> = emptyList()
+        private var items: List<AppPicker.Item> = emptyList()
+        private var icons: Map<String, Drawable> = emptyMap()
 
-        fun submit(next: List<AppPicker.Row>) {
-            rows = next
+        fun submit(next: List<AppPicker.Item>, nextIcons: Map<String, Drawable>) {
+            items = next
+            icons = nextIcons
             notifyDataSetChanged()
         }
 
-        override fun getItemCount() = rows.size
+        override fun getItemCount() = items.size
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
-            VH(ItemBlockedAppBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+        override fun getItemViewType(position: Int) =
+            if (items[position] is AppPicker.Item.Header) TYPE_HEADER else TYPE_APP
 
-        override fun onBindViewHolder(holder: VH, position: Int) {
-            val row = rows[position]
-            with(holder.binding) {
-                appLabel.text = row.label
-                appPackage.text = row.packageName
-                appCheck.isChecked = row.checked
-                appCheck.isEnabled = row.selectable
-
-                val reason = row.reason
-                appReason.visibility = if (reason == null) View.GONE else View.VISIBLE
-                appReason.text = reason
-
-                // A hard-excluded row stays visible but reads as unavailable.
-                val alpha = if (row.selectable) 1f else 0.5f
-                appLabel.alpha = alpha
-                appPackage.alpha = alpha
-
-                root.isEnabled = row.selectable
-                root.setOnClickListener { onClick(row) }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+            val inflater = LayoutInflater.from(parent.context)
+            return if (viewType == TYPE_HEADER) {
+                HeaderVH(ItemSectionHeaderBinding.inflate(inflater, parent, false))
+            } else {
+                AppVH(ItemBlockedAppBinding.inflate(inflater, parent, false))
             }
         }
 
-        class VH(val binding: ItemBlockedAppBinding) : RecyclerView.ViewHolder(binding.root)
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            when (val item = items[position]) {
+                is AppPicker.Item.Header -> (holder as HeaderVH).binding.headerText.text = item.title
+                is AppPicker.Item.App -> bindApp((holder as AppVH).binding, item.row)
+            }
+        }
+
+        private fun bindApp(binding: ItemBlockedAppBinding, row: AppPicker.Row) = with(binding) {
+            appLabel.text = row.label
+            appCheck.isChecked = row.checked
+            appCheck.isEnabled = row.selectable
+            appIcon.setImageDrawable(icons[row.packageName])
+
+            val reason = row.reason
+            appReason.visibility = if (reason == null) View.GONE else View.VISIBLE
+            appReason.text = reason
+
+            // A hard-excluded row stays visible but reads as unavailable.
+            val alpha = if (row.selectable) 1f else 0.5f
+            appLabel.alpha = alpha
+            appIcon.alpha = alpha
+
+            root.isEnabled = row.selectable
+            root.setOnClickListener { onClick(row) }
+        }
+
+        class AppVH(val binding: ItemBlockedAppBinding) : RecyclerView.ViewHolder(binding.root)
+        class HeaderVH(val binding: ItemSectionHeaderBinding) : RecyclerView.ViewHolder(binding.root)
+
+        private companion object {
+            const val TYPE_HEADER = 0
+            const val TYPE_APP = 1
+        }
     }
 }
