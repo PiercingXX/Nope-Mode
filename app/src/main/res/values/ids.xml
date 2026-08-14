@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Holds a TextView's ORIGINAL layout text colour so re-theming can always
+         be computed from it. Without it, retinting is one-way: after one pass
+         the layout's colour is gone and the next preset has nothing to match. -->
+    <item name="tag_original_text_color" type="id" />
+</resources>

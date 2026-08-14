@@ -59,8 +59,14 @@ abstract class BrandActivity : AppCompatActivity() {
     /**
      * Re-tint text that the layout painted with the AMOLED-era literals.
      *
-     * Only the two brand text colours are swapped: anything deliberately
-     * coloured — Signal green headings, warn-amber status — is left alone, since
+     * Each view's ORIGINAL colour is stashed in a tag the first time it is seen,
+     * and every later decision is made from that rather than from whatever is on
+     * screen now. Matching on the current colour is one-way: after a light
+     * preset repainted body text to #1A1A1A, nothing matched the dark literals
+     * any more and switching back to AMOLED left the page dark-grey on black.
+     *
+     * Only the brand text colours are swapped. Anything deliberately coloured —
+     * Signal green headings, warn-amber status — keeps its own colour, since
      * §3.5 status colours are semantic and must not follow the background.
      */
     private fun retintText(group: ViewGroup, textColor: Int) {
@@ -74,7 +80,11 @@ abstract class BrandActivity : AppCompatActivity() {
                 for (i in 0 until view.childCount) walk(view.getChildAt(i))
             }
             if (view is TextView) {
-                when (view.currentTextColor) {
+                val original = view.getTag(R.id.tag_original_text_color) as? Int
+                    ?: view.currentTextColor.also {
+                        view.setTag(R.id.tag_original_text_color, it)
+                    }
+                when (original) {
                     paper, body -> view.setTextColor(textColor)
                     muted -> view.setTextColor(mutedTarget)
                 }
