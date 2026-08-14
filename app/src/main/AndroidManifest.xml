@@ -56,10 +56,18 @@
             android:name=".ui.SchedulesActivity"
             android:exported="false"
             android:label="@string/schedules_title" />
+        <!-- Exported so it can serve as the Quiet Ringer rule's
+             configurationActivity; the system rejects a zen rule whose settings
+             screen it cannot resolve (verified on-device). -->
         <activity
             android:name=".ui.SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title" />
+            android:exported="true"
+            android:label="@string/settings_title">
+            <intent-filter>
+                <action android:name="android.service.notification.action.AUTOMATIC_ZEN_RULE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".ui.BackupActivity"
             android:exported="false"

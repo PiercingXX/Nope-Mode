@@ -31,10 +31,14 @@ import kotlinx.coroutines.withContext
  * only writer to `blocked_app`, and everything downstream — the reconcile loop,
  * the enforcer, the tile — operates on the set it produces.
  *
- * Every launchable app is listed. Apps the platform will refuse are shown
- * disabled with the reason inline rather than hidden, so the user can never
- * assume an app is blocked when it isn't (design §4.1, R8). The default SMS
- * handler is selectable but only behind an explicit confirmation.
+ * Every launchable app is listed. The ONLY rows that cannot be selected are the
+ * ones the platform itself refuses — verified on-device: Android logs
+ * 'Cannot suspend package "...": is the default dialer' and leaves it running.
+ * Those are shown disabled with the reason inline rather than hidden, so the
+ * user can never assume an app is blocked when it isn't (design §4.1, R8).
+ *
+ * Nothing else is gated. This is the user's device; if they want to block their
+ * SMS app they can, and the row simply carries a caution about 2FA codes.
  *
  * Every edit reconciles immediately (design §7.1), so checking an app while
  * Nope-Mode is already active suspends it there and then.
@@ -45,7 +49,7 @@ class BlockedAppsActivity : AppCompatActivity() {
     private val adapter = AppAdapter(::onRowClicked)
 
     private var installed: List<AppPicker.InstalledApp> = emptyList()
-    private var protections = ProtectedPackages.Protections(emptyMap(), emptyMap())
+    private var protections = ProtectedPackages.Protections(emptyMap(), emptyMap(), emptyMap())
     private var blocked: Set<String> = emptySet()
     private var query: String = ""
 
@@ -105,6 +109,7 @@ class BlockedAppsActivity : AppCompatActivity() {
             blocked = blocked,
             hardBlocked = protections.hardBlocked,
             requiresConfirmation = protections.requiresConfirmation,
+            advisories = protections.advisories,
             query = query,
         )
         adapter.submit(rows)

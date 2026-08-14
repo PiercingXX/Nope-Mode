@@ -38,6 +38,11 @@ object ProtectedPackages {
         val hardBlocked: Map<String, String>,
         /** package -> reason; selectable only with explicit confirmation. */
         val requiresConfirmation: Map<String, String>,
+        /**
+         * package -> caution shown inline. Freely selectable — this is
+         * information, not a gate. The user owns the device and decides.
+         */
+        val advisories: Map<String, String> = emptyMap(),
     )
 
     fun discover(context: Context): Protections {
@@ -61,20 +66,32 @@ object ProtectedPackages {
             hard.putIfAbsent(it, "The package installer — needed to install or remove apps")
         }
         defaultDialer(context)?.let {
-            hard.putIfAbsent(it, "Your phone dialer — suspending it would block calls, including emergency calls")
+            // Verified on-device 2026-08-13: the platform logs
+            // 'Cannot suspend package "com.android.dialer": is the default dialer'
+            // and leaves it running. This is AOSP refusing, not Nope-Mode's
+            // policy, so say so — and name the way around it, because there is
+            // one and it is the user's to take.
+            hard.putIfAbsent(
+                it,
+                "Android itself refuses to suspend whichever app is your default dialer. " +
+                    "To block this one, make a different app your default dialer first.",
+            )
         }
         permissionController(pm)?.let {
             hard.putIfAbsent(it, "The permission controller — needed to grant and revoke permissions")
         }
 
-        val confirm = LinkedHashMap<String, String>()
+        // The default SMS handler suspends fine — verified on-device. Blocking
+        // it is the user's call, so it is freely selectable and merely carries a
+        // caution about 2FA codes.
+        val advisories = LinkedHashMap<String, String>()
         defaultSms(context)?.let { pkg ->
             if (pkg !in hard) {
-                confirm[pkg] = "Your SMS app — blocking it also silences two-factor codes"
+                advisories[pkg] = "Heads up: this is your SMS app, so blocking it also silences two-factor codes."
             }
         }
 
-        return Protections(hard, confirm)
+        return Protections(hard, requiresConfirmation = emptyMap(), advisories = advisories)
     }
 
     /** Every installed app that has a launcher entry, as the picker lists them. */

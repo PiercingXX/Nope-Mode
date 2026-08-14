@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.service.notification.Condition
 import android.service.notification.ZenPolicy
+import android.util.Log
 
 /**
  * T8 — WS11 Quiet Ringer: the Android wiring of the zen rule (design §18).
@@ -60,17 +61,30 @@ class RingerPolicy(private val context: Context) {
             return existing
         }
 
+        // The framework validates this: "Rule must have a valid (enabled)
+        // ConditionProviderService or configurationActivity". Verified on-device
+        // 2026-08-13 — passing a plain class as owner throws, because
+        // RingerPolicy is not a service. Nope-Mode drives the rule's state
+        // directly via setAutomaticZenRuleState and needs no ConditionProvider,
+        // so point at a real activity instead and leave the owner null.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            // Below Q the only way to own a rule is a ConditionProviderService,
+            // which this design deliberately does not run. Stay inert and say so
+            // rather than half-create a rule that never fires.
+            Log.w(TAG, "Quiet Ringer needs API 29+; staying inert on SDK ${Build.VERSION.SDK_INT}")
+            return null
+        }
+
         val config = ZenPolicyBuilder.build(quietRingerEnabled, allowRepeatCallers)
         val rule = AutomaticZenRule(
             RULE_NAME,
-            ComponentName(context, RingerPolicy::class.java),
+            null,
+            ComponentName(context, SETTINGS_ACTIVITY),
             CONDITION_ID,
+            toZenPolicy(config),
             NotificationManager.INTERRUPTION_FILTER_PRIORITY,
             true,
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            rule.zenPolicy = toZenPolicy(config)
-        }
         val id = notificationManager.addAutomaticZenRule(rule)
         persistRuleId(id)
         return id
@@ -144,7 +158,15 @@ class RingerPolicy(private val context: Context) {
     }
 
     companion object {
+        private const val TAG = "RingerPolicy"
         private const val RULE_NAME = "Nope-Mode Quiet Ringer"
+
+        /**
+         * The activity the system offers as this rule's settings screen. It must
+         * be a real, exported-to-system activity in this package or the rule is
+         * rejected at creation.
+         */
+        private const val SETTINGS_ACTIVITY = "com.piercingxx.nopemode.ui.SettingsActivity"
         private const val PREFS_NAME = "nopemode_ringer"
         private const val KEY_RULE_ID = "zen_rule_id"
 
