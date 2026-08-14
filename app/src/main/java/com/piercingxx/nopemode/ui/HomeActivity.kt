@@ -14,6 +14,7 @@ import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
+import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityHomeBinding
 import com.piercingxx.nopemode.schedule.AlarmScheduler
 import com.piercingxx.nopemode.schedule.BreakStarter
@@ -45,6 +46,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding
     private lateinit var deviceOwner: DeviceOwnerManager
     private var onBreak = false
+    private var suppressMasterCallback = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +60,19 @@ class HomeActivity : AppCompatActivity() {
         binding.backupButton.setOnClickListener { open(BackupActivity::class.java) }
         binding.setupButton.setOnClickListener { open(SetupActivity::class.java) }
         binding.breakButton.setOnClickListener { onBreakClicked() }
+        binding.masterSwitch.setOnCheckedChangeListener { _, checked ->
+            // Ignore the echo from refresh() setting the switch programmatically.
+            // Guarding on isPressed instead looked equivalent but silently drops
+            // real changes from accessibility services and synthetic input.
+            if (suppressMasterCallback) return@setOnCheckedChangeListener
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    SettingsStore(applicationContext).setEnabled(checked)
+                    runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
+                }
+                refresh()
+            }
+        }
     }
 
     private fun open(target: Class<out AppCompatActivity>) {
@@ -126,6 +141,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
+        suppressMasterCallback = true
+        binding.masterSwitch.isChecked = SettingsStore(this).isEnabled()
+        suppressMasterCallback = false
         val isDeviceOwner = deviceOwner.tier() == DeviceOwnerManager.Tier.DEVICE_OWNER
         binding.tierText.text = HomeStateText.tierText(isDeviceOwner)
         binding.provisionText.text =
