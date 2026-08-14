@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.util.Log
+import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.AppStateDao
 import com.piercingxx.nopemode.data.BlockedAppDao
 import com.piercingxx.nopemode.data.NopeDatabase
@@ -60,8 +61,20 @@ class AlarmScheduler private constructor(
      * every alarm fire and on boot recovery.
      */
     fun reconcileAndApply(now: LocalDateTime = LocalDateTime.now(zone)) {
-        val schedules = runBlocking { scheduleDao.observeAll().first() }
-        val override = OverrideMapper.toOverride(runBlocking { appStateDao.get() })
+        // Master switch (design §11). Off means no schedule applies, so the
+        // plan derives inactive, everything is released and the alarm is
+        // cancelled — all through the normal derived path, not a special case
+        // that bypasses the enforcer (D8).
+        val enabled = SettingsStore(context).isEnabled()
+        val schedules =
+            if (enabled) runBlocking { scheduleDao.observeAll().first() } else emptyList()
+        // The override has to be dropped too, not just the schedules. An
+        // indefinite ForceOn pins the state active on its own (§6), so emptying
+        // the schedule list alone leaves the master switch unable to turn
+        // anything off — which is exactly how a tile tap became inescapable.
+        val override =
+            if (enabled) OverrideMapper.toOverride(runBlocking { appStateDao.get() })
+            else Override.None
         val blocked = runBlocking { blockedAppDao.observeAll().first() }
             .map { it.packageName }.toSet()
         val currentSuspended = runBlocking { suspendRecordDao.observeAll().first() }

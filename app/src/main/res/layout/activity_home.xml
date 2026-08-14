@@ -60,6 +60,19 @@
             android:layout_marginTop="16dp"
             android:textIsSelectable="true" />
 
+        <!-- Design §11 requires a master toggle on Home. Without it, a user
+             inside a schedule window has no off switch at all: the tile only
+             flips ForceOn, and a break is bounded and rate-limited. -->
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/masterSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:fontFamily="@string/font_body"
+            android:text="@string/master_enabled"
+            android:textColor="@color/pxx_white_90"
+            android:textSize="15sp" />
+
         <!-- Focus Mode parity (design §1): a bounded break, offered as 5/15/30.
              Signal green because while active this is the action on the screen. -->
         <Button

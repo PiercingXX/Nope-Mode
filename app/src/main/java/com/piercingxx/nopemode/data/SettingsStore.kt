@@ -21,6 +21,22 @@ class SettingsStore(context: Context) {
     private val prefs = context.applicationContext
         .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    /**
+     * The master switch (design §11). Off means Nope-Mode enforces nothing at
+     * all, whatever the schedule says.
+     *
+     * This is deliberately NOT a friction setting and is NOT locked while
+     * active. Design §9 locks the frictions so the 2am workaround cannot be
+     * "raise the budget" — but a product with no off switch is a trap, not a
+     * discipline tool, and the schedule window is exactly when a user is most
+     * likely to need out. Focus Mode can be turned off too.
+     */
+    fun isEnabled(): Boolean = prefs.getBoolean(KEY_ENABLED, true)
+
+    fun setEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_ENABLED, enabled).apply()
+    }
+
     fun load(): FrictionSettings {
         val defaults = FrictionSettings()
         return FrictionSettings(
@@ -49,5 +65,6 @@ class SettingsStore(context: Context) {
         const val KEY_BUDGET = "break_budget"
         const val KEY_QUIET_RINGER = "quiet_ringer_enabled"
         const val KEY_REPEAT_CALLERS = "allow_repeat_callers"
+        const val KEY_ENABLED = "master_enabled"
     }
 }

@@ -30,4 +30,6 @@
     <string name="setting_min_interval">Minimum minutes between breaks</string>
     <string name="setting_budget">Breaks allowed per window</string>
     <string name="dnd_missing">Quiet Ringer needs Do Not Disturb access. Without it the ringer is never restricted.</string>
+    <string name="master_enabled">Nope-Mode enabled</string>
+    <string name="master_disabled_note">Nope-Mode is off entirely. Nothing is suspended and no schedule applies.</string>
 </resources>
