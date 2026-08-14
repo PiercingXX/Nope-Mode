@@ -4,45 +4,52 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/pxx_ink"
     android:paddingStart="24dp"
     android:paddingEnd="24dp"
-    android:paddingTop="24dp">
+    android:paddingTop="32dp">
 
     <TextView
         android:id="@+id/titleText"
+        style="@style/Text.Display"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/blocked_apps_title"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/white"
+        android:textSize="26sp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- Input well at `slate` (§3.2), hairline border, mono text. -->
     <EditText
         android:id="@+id/searchInput"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_input"
+        android:fontFamily="@string/font_body"
         android:hint="@string/blocked_apps_search_hint"
         android:importantForAutofill="no"
         android:inputType="text"
         android:maxLines="1"
-        android:textColor="@android:color/white"
-        android:textColorHint="@android:color/darker_gray"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:textColor="@color/pxx_white_90"
+        android:textColorHint="@color/pxx_white_50"
+        android:textSize="15sp"
         app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/emptyText"
+        style="@style/Text.Muted"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:text="@string/blocked_apps_empty"
-        android:textSize="16sp"
         android:visibility="gone"
-        android:textColor="@android:color/darker_gray"
         app:layout_constraintTop_toBottomOf="@id/searchInput"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -51,9 +58,10 @@
         android:id="@+id/appList"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:clipToPadding="false"
         android:paddingBottom="24dp"
+        android:scrollbars="none"
         app:layout_constraintTop_toBottomOf="@id/searchInput"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

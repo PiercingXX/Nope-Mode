@@ -2,14 +2,18 @@ package com.piercingxx.nopemode.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.admin.DeviceOwnerManager
 import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
 import com.piercingxx.nopemode.databinding.ActivityHomeBinding
 import com.piercingxx.nopemode.schedule.AlarmScheduler
+import com.piercingxx.nopemode.service.RingerPolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -45,6 +49,20 @@ class HomeActivity : AppCompatActivity() {
         startActivity(Intent(this, target))
     }
 
+    /**
+     * Whether the Quiet Ringer can actually restrict the ringer.
+     *
+     * Checked by creating the rule, not by asking for the grant:
+     * `isNotificationPolicyAccessGranted` was observed returning true on-device
+     * while `addAutomaticZenRule` threw "Notification policy access denied", so
+     * the grant flag alone would have us report a working ringer that isn't.
+     */
+    private fun quietRingerWorks(): Boolean =
+        runCatching {
+            RingerPolicy(applicationContext)
+                .ensureRule(quietRingerEnabled = true, allowRepeatCallers = true) != null
+        }.getOrDefault(false)
+
     override fun onResume() {
         super.onResume()
         refresh()
@@ -70,7 +88,24 @@ class HomeActivity : AppCompatActivity() {
                 Triple(active, override, blockedCount)
             }
             binding.stateText.text = HomeStateText.stateText(state.first, state.second)
+            // BRAND-GUIDE §3.1, the rule of one accent: Signal green marks the
+            // single thing the eye should land on. On this screen that is
+            // whether Nope-Mode is actually on.
+            binding.stateText.setTextColor(
+                ContextCompat.getColor(
+                    this@HomeActivity,
+                    if (state.first) R.color.pxx_signal else R.color.pxx_paper,
+                )
+            )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.third)
+
+            // Design §18.4 / R8: a Quiet Ringer that silently does nothing is
+            // the worst outcome, so say it out loud rather than let the screen
+            // imply calls are being filtered when they are not.
+            val ringerWarning = HomeStateText.quietRingerWarning(quietRingerWorks())
+            binding.warningText.text = ringerWarning.orEmpty()
+            binding.warningText.visibility =
+                if (ringerWarning == null) View.GONE else View.VISIBLE
         }
     }
 }

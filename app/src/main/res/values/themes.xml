@@ -1,6 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  PiercingXX house style, per BRAND-GUIDE.md.
+
+  §3.1 Ink ground, Paper type, and exactly ONE saturated accent — Signal green.
+  Nope-Mode has no reserved product signal (§3.4), so it takes the family lime.
+  §3.2 hierarchy comes from white-on-black opacity stops, not from new greys.
+  §4 type is mono, and weight is light: bold is a scalpel, not a highlighter.
+
+  Colors come from brand_colors.xml, copied verbatim from the branding repo's
+  tokens/android-colors.xml — §7.7 says consume the tokens, don't retype hexes.
+-->
 <resources>
+
     <style name="Theme.NopeMode" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">@color/pxx_ink</item>
+        <item name="android:colorBackground">@color/pxx_ink</item>
+
+        <!-- The one accent. Everything that wants to be noticed is this green;
+             nothing else is saturated (§3.1, the rule of one accent). -->
+        <item name="colorPrimary">@color/pxx_signal</item>
+        <item name="colorOnPrimary">@color/pxx_ink</item>
+        <item name="colorSecondary">@color/pxx_signal</item>
+        <item name="colorOnSecondary">@color/pxx_ink</item>
+        <item name="colorAccent">@color/pxx_signal</item>
+
+        <item name="android:colorControlActivated">@color/pxx_signal</item>
+        <item name="android:colorControlNormal">@color/pxx_white_50</item>
+
+        <item name="android:textColorPrimary">@color/pxx_white_90</item>
+        <item name="android:textColorSecondary">@color/pxx_white_50</item>
+        <item name="android:textColorHint">@color/pxx_white_50</item>
+
+        <item name="android:statusBarColor">@color/pxx_ink</item>
+        <item name="android:navigationBarColor">@color/pxx_ink</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <item name="android:fontFamily">@string/font_body</item>
     </style>
+
+    <!-- Base for the dotted Text.* names below; a dot in a style name implies a
+         parent of that name, so this has to exist. -->
+    <style name="Text" />
+
+    <!-- §4 display face: the headline voice. Mono, and never bold by default. -->
+    <style name="Text.Display">
+        <item name="android:fontFamily">@string/font_display</item>
+        <item name="android:textColor">@color/pxx_paper</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <!-- Body copy at 90% white (§3.2 `text`). -->
+    <style name="Text.Body">
+        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:textColor">@color/pxx_white_90</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+    </style>
+
+    <!-- Secondary copy at 50% white (§3.2 `muted`). -->
+    <style name="Text.Muted" parent="Text.Body">
+        <item name="android:textColor">@color/pxx_white_50</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Status text. Semantic only, never decorative (§3.5). -->
+    <style name="Text.Warn" parent="Text.Body">
+        <item name="android:textColor">@color/pxx_warn</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!--
+      Navigation rows. Flat, left-aligned, hairline-separated — a PiercingXX
+      surface is text-first, so these read as a list rather than as five
+      competing filled buttons.
+    -->
+    <style name="Nav.Row" parent="Widget.Material3.Button.TextButton">
+        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:textColor">@color/pxx_paper</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:paddingTop">18dp</item>
+        <item name="android:paddingBottom">18dp</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:letterSpacing">0.02</item>
+        <!-- Separators are explicit Views in the layout: Material tints a
+             button's background, so a drawable hairline here never renders. -->
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="rippleColor">@color/pxx_white_10</item>
+    </style>
+
+    <!-- 10%-white hairline (§3.2 `line`), used between nav rows and list items. -->
+    <style name="Divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:background">@color/pxx_white_10</item>
+    </style>
+
 </resources>
