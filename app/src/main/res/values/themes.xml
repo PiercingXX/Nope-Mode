@@ -95,6 +95,17 @@
         <item name="rippleColor">@color/pxx_white_10</item>
     </style>
 
+    <!-- The one filled control in the app. §3.1 allows a single saturated
+         accent; this is where it earns its keep. -->
+    <style name="Button.Signal" parent="Widget.Material3.Button">
+        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:textColor">@color/pxx_ink</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="backgroundTint">@color/pxx_signal</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
     <!-- 10%-white hairline (§3.2 `line`), used between nav rows and list items. -->
     <style name="Divider">
         <item name="android:layout_width">match_parent</item>

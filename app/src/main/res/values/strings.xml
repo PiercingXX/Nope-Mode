@@ -17,4 +17,17 @@
     <string name="accessibility_service_description">Covers blocked apps with the Nope-Mode screen while active (fallback tier).</string>
     <string name="backup_title">Backup</string>
     <string name="backup_hint">Export and restore blocked apps, schedules and friction settings as JSON. A restored file is validated before anything is committed, so a bad backup can never overwrite existing state.</string>
+    <string name="take_a_break">Take a break</string>
+    <string name="end_break">End break now</string>
+    <string name="break_choose_title">How long?</string>
+    <string name="break_minutes">%1$d minutes</string>
+    <string name="grant_dnd">Grant Do Not Disturb access</string>
+    <string name="dnd_granted">Do Not Disturb access: granted</string>
+    <string name="settings_locked">Nope-Mode is active. Turn it off to change friction settings.</string>
+    <string name="setting_quiet_ringer">Quiet Ringer — only starred contacts ring</string>
+    <string name="setting_repeat_callers">Allow repeat callers</string>
+    <string name="setting_break_duration">Break length</string>
+    <string name="setting_min_interval">Minimum minutes between breaks</string>
+    <string name="setting_budget">Breaks allowed per window</string>
+    <string name="dnd_missing">Quiet Ringer needs Do Not Disturb access. Without it the ringer is never restricted.</string>
 </resources>

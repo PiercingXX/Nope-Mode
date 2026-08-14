@@ -10,6 +10,7 @@ import com.piercingxx.nopemode.data.BlockedAppDao
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
 import com.piercingxx.nopemode.data.ScheduleDao
+import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.data.SuspendRecordDao
 import com.piercingxx.nopemode.enforce.Enforcer
 import com.piercingxx.nopemode.enforce.SuspendEnforcer
@@ -92,11 +93,17 @@ class AlarmScheduler private constructor(
      */
     private fun applyRinger(active: Boolean) {
         runCatching {
+            val settings = SettingsStore(context).load()
+            if (!settings.quietRingerEnabled) {
+                // Master off (§18.5). Deactivate rather than leave a stale rule
+                // active — an off toggle that still silences calls is the exact
+                // dishonesty R8 forbids.
+                ringerPolicy.setActive(false)
+                return@runCatching
+            }
             val id = ringerPolicy.ensureRule(
-                // TODO(WS7c): thread both from the Settings screen (design §18.5)
-                // once friction settings are persisted. Repeat callers default on.
                 quietRingerEnabled = true,
-                allowRepeatCallers = true,
+                allowRepeatCallers = settings.allowRepeatCallers,
             ) ?: return@runCatching
             ringerPolicy.setActive(active)
             Log.d(TAG, "quiet ringer rule $id active=$active")

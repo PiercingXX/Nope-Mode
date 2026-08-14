@@ -60,6 +60,24 @@
             android:layout_marginTop="16dp"
             android:textIsSelectable="true" />
 
+        <!-- Focus Mode parity (design §1): a bounded break, offered as 5/15/30.
+             Signal green because while active this is the action on the screen. -->
+        <Button
+            android:id="@+id/breakButton"
+            style="@style/Button.Signal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/take_a_break" />
+
+        <TextView
+            android:id="@+id/breakReasonText"
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
