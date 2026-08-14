@@ -2,6 +2,7 @@ package com.piercingxx.nopemode.enforce
 
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.piercingxx.nopemode.admin.NopeDeviceAdminReceiver
 import com.piercingxx.nopemode.data.SuspendRecord
@@ -40,16 +41,35 @@ class SuspendEnforcer(
             .map { it.packageName }
             .toSet()
 
-        // Release anything recorded but no longer desired. Unsuspend BEFORE
-        // deleting the record so a crash mid-release leaves a recoverable record.
-        val toRelease = recorded - desired
+        // Release anything recorded but no longer desired, PLUS anything the
+        // platform reports suspended that we no longer want. The second half
+        // matters: `suspend_record` is our bookkeeping, and if it is ever lost —
+        // app data cleared, database recreated, a build installed over one that
+        // suspended things — the platform keeps those packages suspended with
+        // nothing left pointing at them. Shell cannot clear a device-owner
+        // suspension, so only this code can, and it will not act on a table that
+        // no longer remembers them.
+        //
+        // Deriving the release set from the platform rather than from our own
+        // record is what D8 asks for: state is read back, never accumulated.
+        val onPlatform = platformSuspended()
+        val toRelease = (recorded + onPlatform) - desired
+        Log.i(TAG, "recorded=$recorded platformSuspended=$onPlatform desired=$desired toRelease=$toRelease")
         if (toRelease.isNotEmpty()) {
-            dpm.setPackagesSuspended(
+            // The release return value matters as much as the suspend one: a
+            // package we cannot release stays suspended with nothing tracking
+            // it, which is the orphan case that got us here.
+            val notReleased: Array<out String>? = dpm.setPackagesSuspended(
                 NopeDeviceAdminReceiver.componentName(context),
                 toRelease.toTypedArray(),
                 false,
             )
-            runBlocking { suspendRecordDao.deleteByPackages(toRelease.toList()) }
+            val stuck = notReleased?.toList().orEmpty()
+            if (stuck.isNotEmpty()) {
+                Log.w(TAG, "could not release: $stuck")
+            }
+            // Only forget the ones that actually released.
+            runBlocking { suspendRecordDao.deleteByPackages((toRelease - stuck.toSet()).toList()) }
         }
 
         // Suspend the newly-desired set. Record BEFORE suspending so a crash
@@ -58,16 +78,22 @@ class SuspendEnforcer(
         val failed = mutableSetOf<String>()
         if (toSuspend.isNotEmpty()) {
             runBlocking { suspendRecordDao.insertAll(toSuspend.map { SuspendRecord(it) }) }
-            val refused = dpm.setPackagesSuspended(
+            // Declared nullable on purpose. The framework annotates the return
+            // non-null and normally hands back an EMPTY array when everything
+            // succeeded — but it arrives here as a platform type, so treating it
+            // as non-null is an assumption rather than a guarantee. Naming the
+            // type keeps the null branch honest instead of an always-true guard.
+            val refused: Array<out String>? = dpm.setPackagesSuspended(
                 NopeDeviceAdminReceiver.componentName(context),
                 toSuspend.toTypedArray(),
                 true,
             )
-            // setPackagesSuspended returns the packages it could NOT suspend
-            // (or null when all succeeded). Never discard it (R8).
-            refused?.let { failed.addAll(it) }
-            if (refused != null) {
-                runBlocking { suspendRecordDao.deleteByPackages(refused.toList()) }
+            // Whatever comes back is the set it could NOT suspend. Never discard
+            // it (R8): the record must not claim a package the platform refused.
+            val refusedList = refused?.toList().orEmpty()
+            failed.addAll(refusedList)
+            if (refusedList.isNotEmpty()) {
+                runBlocking { suspendRecordDao.deleteByPackages(refusedList) }
             }
         }
 
@@ -76,6 +102,23 @@ class SuspendEnforcer(
         }
         return Enforcer.Result(failed)
     }
+
+    /**
+     * Every installed package the platform currently reports as suspended.
+     *
+     * `FLAG_SUSPENDED` is the platform's own answer, so orphans left by a lost
+     * `suspend_record` are still visible here and can be released.
+     */
+    private fun platformSuspended(): Set<String> =
+        runCatching {
+            context.packageManager.getInstalledApplications(0)
+                .filter { (it.flags and ApplicationInfo.FLAG_SUSPENDED) != 0 }
+                .map { it.packageName }
+                .toSet()
+        }.getOrElse {
+            Log.w(TAG, "could not read suspended packages", it)
+            emptySet()
+        }
 
     private companion object {
         const val TAG = "SuspendEnforcer"

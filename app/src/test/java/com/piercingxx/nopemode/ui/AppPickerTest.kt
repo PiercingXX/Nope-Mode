@@ -31,8 +31,10 @@ class AppPickerTest {
 
     private val requiresConfirmation = mapOf("com.example.sms" to "Your SMS app")
 
+    private val advisories = mapOf("com.example.news" to "Heads up: this one is noisy")
+
     private fun rows(blocked: Set<String> = emptySet(), query: String = "") =
-        AppPicker.rows(installed, blocked, hardBlocked, requiresConfirmation, query)
+        AppPicker.rows(installed, blocked, hardBlocked, requiresConfirmation, advisories, query)
 
     @Test
     fun `every installed app appears, including excluded ones`() {
@@ -62,6 +64,23 @@ class AppPickerTest {
         val chat = rows().first { it.packageName == "com.example.chat" }
         assertTrue(chat.selectable)
         assertNull(chat.reason)
+    }
+
+    @Test
+    fun `an advisory informs without gating`() {
+        // The distinction that matters: an advisory tells the user what will
+        // happen, it does not decide for them. Selectable stays true.
+        val news = rows().first { it.packageName == "com.example.news" }
+        assertTrue("an advisory must never block selection", news.selectable)
+        assertNull("an advisory is not an exclusion", news.exclusion)
+        assertEquals("Heads up: this one is noisy", news.reason)
+    }
+
+    @Test
+    fun `an advisory does not stop the app being blocked`() {
+        val news = rows(blocked = setOf("com.example.news"))
+            .first { it.packageName == "com.example.news" }
+        assertTrue(news.checked)
     }
 
     @Test

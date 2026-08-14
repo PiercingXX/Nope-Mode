@@ -76,7 +76,7 @@ class SuspendEnforcerTest {
     }
 
     @Test
-    fun `null return means full success and empty failed list`() {
+    fun `an empty refusal means full success and no cleanup`() {
         val enforcer = enforcer(recorded = emptySet())
         // An empty refusal (the platform suspended every requested package)
         // must surface as full success with no failed packages.
@@ -86,10 +86,14 @@ class SuspendEnforcerTest {
 
         assertEquals(emptySet<String>(), result.failed)
         assertTrue(result.success)
-        // Nothing was refused, so nothing is cleaned up (the delete call is
-        // empty and removes nothing).
-        coVerify { dao.deleteByPackages(emptyList()) }
+        // Nothing was refused and nothing was recorded, so no record is touched.
+        coVerify(exactly = 0) { dao.deleteByPackages(any()) }
     }
+
+    // No test for a null refusal: mockk rejects `returns null` here because the
+    // framework declares the return non-null, so the case is not expressible.
+    // The enforcer still handles it defensively — it arrives as a platform type
+    // and a non-null annotation is a promise, not a guarantee.
 
     @Test
     fun `release path unsuspends before deleting the record`() {

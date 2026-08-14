@@ -27,16 +27,24 @@ object AppPicker {
         val checked: Boolean,
         /** Null when freely selectable. */
         val exclusion: Exclusion?,
+        /**
+         * A caution shown inline on an otherwise freely selectable row. This is
+         * information, never a gate — the user owns the device.
+         */
+        val advisory: String? = null,
     ) {
-        /** Hard exclusions can never be toggled. */
+        /**
+         * Only a hard exclusion blocks selection, and only because the platform
+         * itself refuses. Everything else is the user's decision to make.
+         */
         val selectable: Boolean get() = exclusion !is Exclusion.Hard
 
-        /** Shown under the label when the app is not freely selectable. */
+        /** Shown under the label: why it is blocked, or what to watch out for. */
         val reason: String?
             get() = when (exclusion) {
                 is Exclusion.Hard -> exclusion.reason
                 is Exclusion.RequiresConfirmation -> exclusion.reason
-                null -> null
+                null -> advisory
             }
     }
 
@@ -53,6 +61,7 @@ object AppPicker {
         blocked: Set<String>,
         hardBlocked: Map<String, String>,
         requiresConfirmation: Map<String, String>,
+        advisories: Map<String, String> = emptyMap(),
         query: String = "",
     ): List<Row> {
         val needle = query.trim().lowercase()
@@ -72,6 +81,7 @@ object AppPicker {
                     // must never render checked even if a stale row says it is.
                     checked = app.packageName in blocked && exclusion !is Exclusion.Hard,
                     exclusion = exclusion,
+                    advisory = advisories[app.packageName],
                 )
             }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
