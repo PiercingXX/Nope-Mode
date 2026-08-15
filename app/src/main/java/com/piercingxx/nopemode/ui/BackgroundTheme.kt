@@ -22,9 +22,10 @@ object BackgroundTheme {
     /** In display order, matching the launcher's preview strip. */
     val PRESETS: Map<String, Colors> = linkedMapOf(
         "amoled" to Colors(0xFF000000.toInt(), 0xFFFFFFFF.toInt()),
-        "graphite" to Colors(0xFF111827.toInt(), 0xFFFFFFFF.toInt()),
+        "graphite" to Colors(0xFF131316.toInt(), 0xFFFFFFFF.toInt()),
         "forest" to Colors(0xFF10261B.toInt(), 0xFFFFFFFF.toInt()),
         "ocean" to Colors(0xFF0F1C2E.toInt(), 0xFFFFFFFF.toInt()),
+        "burgundy" to Colors(0xFF2A1018.toInt(), 0xFFFFFFFF.toInt()),
         "paper" to Colors(0xFFF3EEE2.toInt(), 0xFF1A1A1A.toInt()),
         "mist" to Colors(0xFFE6EDF5.toInt(), 0xFF1A1A1A.toInt()),
     )
@@ -35,6 +36,7 @@ object BackgroundTheme {
         "graphite" to "Graphite",
         "forest" to "Forest Night",
         "ocean" to "Ocean Drift",
+        "burgundy" to "Burgundy",
         "paper" to "Paper",
         "mist" to "Mist",
     )
