@@ -20,9 +20,10 @@ class BackgroundThemeTest {
     @Test
     fun `preset values match the launcher exactly`() {
         assertEquals(0xFF000000.toInt(), BackgroundTheme.colors("amoled").background)
-        assertEquals(0xFF111827.toInt(), BackgroundTheme.colors("graphite").background)
+        assertEquals(0xFF131316.toInt(), BackgroundTheme.colors("graphite").background)
         assertEquals(0xFF10261B.toInt(), BackgroundTheme.colors("forest").background)
         assertEquals(0xFF0F1C2E.toInt(), BackgroundTheme.colors("ocean").background)
+        assertEquals(0xFF2A1018.toInt(), BackgroundTheme.colors("burgundy").background)
         assertEquals(0xFFF3EEE2.toInt(), BackgroundTheme.colors("paper").background)
         assertEquals(0xFFE6EDF5.toInt(), BackgroundTheme.colors("mist").background)
     }
@@ -30,7 +31,7 @@ class BackgroundThemeTest {
     @Test
     fun `preset order matches the launcher preview strip`() {
         assertEquals(
-            listOf("amoled", "graphite", "forest", "ocean", "paper", "mist"),
+            listOf("amoled", "graphite", "forest", "ocean", "burgundy", "paper", "mist"),
             BackgroundTheme.PRESETS.keys.toList()
         )
     }
@@ -51,7 +52,8 @@ class BackgroundThemeTest {
     @Test
     fun `dark grounds take white type and light grounds take dark type`() {
         assertEquals(white, BackgroundTheme.contrastTextColor(0xFF000000.toInt()))
-        assertEquals(white, BackgroundTheme.contrastTextColor(0xFF111827.toInt()))
+        assertEquals(white, BackgroundTheme.contrastTextColor(0xFF131316.toInt()))
+        assertEquals(white, BackgroundTheme.contrastTextColor(0xFF2A1018.toInt()))
         assertEquals(darkInk, BackgroundTheme.contrastTextColor(0xFFF3EEE2.toInt()))
         assertEquals(darkInk, BackgroundTheme.contrastTextColor(0xFFE6EDF5.toInt()))
     }
@@ -71,6 +73,7 @@ class BackgroundThemeTest {
     fun `isLight marks only the light presets`() {
         assertFalse(BackgroundTheme.isLight("amoled"))
         assertFalse(BackgroundTheme.isLight("forest"))
+        assertFalse(BackgroundTheme.isLight("burgundy"))
         assertTrue(BackgroundTheme.isLight("paper"))
         assertTrue(BackgroundTheme.isLight("mist"))
     }

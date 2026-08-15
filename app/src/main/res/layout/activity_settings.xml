@@ -37,13 +37,22 @@
             android:layout_marginTop="18dp"
             android:text="@string/setting_background" />
 
-        <!-- The launcher's preview strip, same presets and same order. -->
-        <LinearLayout
-            android:id="@+id/themeStrip"
+        <!-- The launcher's preview strip, same presets and same order. Scrolls
+             because §3.3 has seven presets: at 44dp plus an 8dp gap that is
+             364dp of swatch, which fits a 427dp-wide Pixel but runs off the
+             edge of a 360dp one. -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:orientation="horizontal" />
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/themeStrip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <View style="@style/Divider" android:layout_marginTop="20dp" />
 
