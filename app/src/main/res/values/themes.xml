@@ -2,8 +2,8 @@
 <!--
   PiercingXX house style, per BRAND-GUIDE.md.
 
-  §3.1 Ink ground, Paper type, and exactly ONE saturated accent — Signal green.
-  Nope-Mode has no reserved product signal (§3.4), so it takes the family lime.
+  §3.1 Ink ground, Paper type, and exactly ONE accent — Signal white.
+  Nope-Mode has no reserved product signal (§3.4), so it uses pure white.
   §3.2 hierarchy comes from white-on-black opacity stops, not from new greys.
   §4 type is mono, and weight is light: bold is a scalpel, not a highlighter.
 
@@ -16,7 +16,7 @@
         <item name="android:windowBackground">@color/pxx_ink</item>
         <item name="android:colorBackground">@color/pxx_ink</item>
 
-        <!-- The one accent. Everything that wants to be noticed is this green;
+        <!-- The one accent. Everything that wants to be noticed is this white;
              nothing else is saturated (§3.1, the rule of one accent). -->
         <item name="colorPrimary">@color/pxx_signal</item>
         <item name="colorOnPrimary">@color/pxx_ink</item>

@@ -17,7 +17,7 @@ import com.piercingxx.nopemode.data.SettingsStore
  * configuration. Nope-Mode does the same so the two look identical on the same
  * choice, and so switching preset does not need an app restart.
  *
- * Only the ground and the type colour move. Signal green is untouched on every
+ * Only the ground and the type colour move. Signal white is untouched on every
  * preset — §3.1's one accent does not become two because the background changed.
  */
 abstract class BrandActivity : AppCompatActivity() {
@@ -66,7 +66,7 @@ abstract class BrandActivity : AppCompatActivity() {
      * any more and switching back to AMOLED left the page dark-grey on black.
      *
      * Only the brand text colours are swapped. Anything deliberately coloured —
-     * Signal green headings, warn-amber status — keeps its own colour, since
+     * Signal white headings, warn-amber status — keeps its own colour, since
      * §3.5 status colours are semantic and must not follow the background.
      */
     private fun retintText(group: ViewGroup, textColor: Int) {

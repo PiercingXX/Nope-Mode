@@ -10,8 +10,8 @@ package com.piercingxx.nopemode.ui
  * second implementation.
  *
  * Pure — no `android.*`, so the palette and the contrast maths are JVM-provable.
- * Signal green stays the accent on every preset; only the ground and the type
- * colour change (§3.1, the rule of one accent).
+ * The Signal accent stays the same on every preset; only the ground and the
+ * type colour change (§3.1, the rule of one accent).
  */
 object BackgroundTheme {
 
@@ -69,13 +69,12 @@ object BackgroundTheme {
     /**
      * The colour for accent TEXT on a given preset.
      *
-     * Signal green is a light colour, so green type on Paper or Mist is green
-     * on cream and barely readable. §3.1 governs where the accent goes, not
-     * whether it must be used where it cannot be read, and §5 forbids recolouring
-     * the mark — so rather than invent an off-guide darker green, accent text
-     * falls back to the body colour on light grounds. The accent is still
-     * present there on filled controls, where it sits under Ink type and has
-     * plenty of contrast.
+     * Signal is white, so accent type on Paper or Mist would be white on cream
+     * and unreadable. §3.1 governs where the accent goes, not whether it must be
+     * used where it cannot be read, and §5 forbids recolouring the mark — so
+     * rather than invent an off-guide darker tint, accent text falls back to the
+     * body colour on light grounds. The accent is still present there on filled
+     * controls, where it sits under Ink type and has plenty of contrast.
      */
     fun accentTextColor(preset: String?, signal: Int): Int =
         if (isLight(preset)) colors(preset).text else signal

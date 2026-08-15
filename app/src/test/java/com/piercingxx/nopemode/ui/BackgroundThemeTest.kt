@@ -97,17 +97,17 @@ class BackgroundThemeTest {
 
     @Test
     fun `accent text keeps Signal on dark grounds`() {
-        val signal = 0xFF9BE223.toInt()
+        val signal = 0xFFFFFFFF.toInt()
         assertEquals(signal, BackgroundTheme.accentTextColor("amoled", signal))
         assertEquals(signal, BackgroundTheme.accentTextColor("ocean", signal))
     }
 
     @Test
     fun `accent text falls back to body colour on light grounds`() {
-        // Signal green is itself light, so green type on Paper is green on
-        // cream. Rather than invent an off-guide darker green, accent text uses
-        // the body colour there; the accent still appears on filled controls.
-        val signal = 0xFF9BE223.toInt()
+        // Signal is white, so accent type on Paper would be white on cream.
+        // Rather than invent an off-guide darker tint, accent text uses the
+        // body colour there; the accent still appears on filled controls.
+        val signal = 0xFFFFFFFF.toInt()
         assertEquals(darkInk, BackgroundTheme.accentTextColor("paper", signal))
         assertEquals(darkInk, BackgroundTheme.accentTextColor("mist", signal))
     }

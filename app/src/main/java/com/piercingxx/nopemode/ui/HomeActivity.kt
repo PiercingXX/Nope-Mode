@@ -151,7 +151,7 @@ class HomeActivity : BrandActivity() {
                 HomeState(active, override, blockedCount)
             }
             binding.stateText.text = HomeStateText.stateText(state.active, state.override)
-            // BRAND-GUIDE §3.1, the rule of one accent: Signal green marks the
+            // BRAND-GUIDE §3.1, the rule of one accent: Signal white marks the
             // single thing the eye should land on. On this screen that is
             // whether Nope-Mode is actually on.
             binding.stateText.setTextColor(

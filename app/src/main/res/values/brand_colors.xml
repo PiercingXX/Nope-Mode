@@ -4,7 +4,7 @@
 <resources>
     <!-- Core palette -->
     <color name="pxx_ink">#000000</color>
-    <color name="pxx_signal">#9BE223</color>
+    <color name="pxx_signal">#FFFFFF</color>
     <color name="pxx_paper">#FFFFFF</color>
 
     <!-- Neutral ramp -->
@@ -29,7 +29,7 @@
     <color name="pxx_bg_mist">#E6EDF5</color>
 
     <!-- Product signal accents -->
-    <color name="pxx_accent_lime">#9BE223</color>
+    <color name="pxx_accent_lime">#FFFFFF</color>
     <color name="pxx_accent_cyan">#16B0C8</color>
     <color name="pxx_accent_emerald">#34D399</color>
     <color name="pxx_accent_sky">#63B2FF</color>
