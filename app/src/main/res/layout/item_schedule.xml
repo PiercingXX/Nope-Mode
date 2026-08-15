@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:fontFamily="@string/font_body"
-            android:textColor="@color/pxx_paper"
+            android:textColor="@color/pxx_white_90"
             android:textSize="17sp" />
 
         <com.google.android.material.materialswitch.MaterialSwitch

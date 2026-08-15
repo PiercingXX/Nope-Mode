@@ -31,7 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="@string/font_body"
-            android:textColor="@color/pxx_paper"
+            android:textColor="@color/pxx_white_90"
             android:textSize="18sp" />
 
         <!-- Warn amber: a reason a row cannot be picked, or a caution about

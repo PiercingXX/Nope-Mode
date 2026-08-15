@@ -61,6 +61,17 @@ object BackgroundTheme {
     fun isLight(preset: String?): Boolean = contrastTextColor(colors(preset).background) != 0xFFFFFFFF.toInt()
 
     /**
+     * Body text: the preset's type colour at 90% alpha (§3.2 `text`).
+     *
+     * The reserved-white rule (§3.1) gives pure #FFFFFF to Signal alone, so body
+     * copy tops out at 90% — that 10% is the whole reason accent text reads as
+     * accent on an Ink ground rather than as more of the same white. `PRESETS`
+     * keeps the launcher's raw pair so the two apps stay pinned; the ceiling is
+     * applied here instead, the same way muted and line already derive.
+     */
+    fun bodyTextColor(preset: String?): Int = (colors(preset).text and 0x00FFFFFF) or 0xE6000000.toInt()
+
+    /**
      * Secondary text: the same hue as the body colour at 50% alpha, matching
      * §3.2's "prefer opacity over new greys" on light presets as well as dark.
      */
@@ -73,8 +84,9 @@ object BackgroundTheme {
      * and unreadable. §3.1 governs where the accent goes, not whether it must be
      * used where it cannot be read, and §5 forbids recolouring the mark — so
      * rather than invent an off-guide darker tint, accent text falls back to the
-     * body colour on light grounds. The accent is still present there on filled
-     * controls, where it sits under Ink type and has plenty of contrast.
+     * preset's full-strength type colour on light grounds. The reserved-white
+     * rule still holds there, inverted: accent is 100% Ink against body copy's
+     * 90%, so it out-weighs the page the same way white does on a dark ground.
      */
     fun accentTextColor(preset: String?, signal: Int): Int =
         if (isLight(preset)) colors(preset).text else signal

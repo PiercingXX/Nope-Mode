@@ -53,7 +53,7 @@ abstract class BrandActivity : AppCompatActivity() {
             isAppearanceLightNavigationBars = BackgroundTheme.isLight(preset)
         }
 
-        retintText(root as? ViewGroup ?: return, colors.text)
+        retintText(root as? ViewGroup ?: return, BackgroundTheme.bodyTextColor(preset))
     }
 
     /**
@@ -65,12 +65,13 @@ abstract class BrandActivity : AppCompatActivity() {
      * preset repainted body text to #1A1A1A, nothing matched the dark literals
      * any more and switching back to AMOLED left the page dark-grey on black.
      *
-     * Only the brand text colours are swapped. Anything deliberately coloured —
-     * Signal white headings, warn-amber status — keeps its own colour, since
-     * §3.5 status colours are semantic and must not follow the background.
+     * Only the brand text colours are swapped. Anything deliberately coloured
+     * keeps its own: warn-amber status, because §3.5 status colours are semantic
+     * and must not follow the background, and anything at pure white, because
+     * the reserved-white rule (§3.1) means 100% white IS the accent — retinting
+     * it to the body colour is exactly what would make the accent stop reading.
      */
     private fun retintText(group: ViewGroup, textColor: Int) {
-        val paper = getColor(R.color.pxx_paper)
         val body = getColor(R.color.pxx_white_90)
         val muted = getColor(R.color.pxx_white_50)
         val mutedTarget = BackgroundTheme.mutedTextColor(preset)
@@ -85,7 +86,7 @@ abstract class BrandActivity : AppCompatActivity() {
                         view.setTag(R.id.tag_original_text_color, it)
                     }
                 when (original) {
-                    paper, body -> view.setTextColor(textColor)
+                    body -> view.setTextColor(textColor)
                     muted -> view.setTextColor(mutedTarget)
                 }
             }

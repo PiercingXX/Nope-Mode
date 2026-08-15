@@ -76,6 +76,31 @@ class BackgroundThemeTest {
     }
 
     @Test
+    fun `body text stops at ninety percent so pure white stays the accent`() {
+        // §3.1's reserved-white rule. If body copy reached 100% there would be
+        // nothing left for the accent to out-weigh on an Ink ground, which is
+        // the whole mechanism now that Signal is white rather than a hue.
+        val onDark = BackgroundTheme.bodyTextColor("amoled")
+        assertEquals(0xE6, (onDark ushr 24) and 0xFF)
+        assertEquals(0xFFFFFF, onDark and 0x00FFFFFF)
+
+        // Inverted on light grounds: 90% Ink body under 100% Ink accent.
+        val onLight = BackgroundTheme.bodyTextColor("paper")
+        assertEquals(0xE6, (onLight ushr 24) and 0xFF)
+        assertEquals(0x1A1A1A, onLight and 0x00FFFFFF)
+    }
+
+    @Test
+    fun `the accent always out-weighs body text on the same ground`() {
+        val signal = 0xFFFFFFFF.toInt()
+        for (preset in BackgroundTheme.PRESETS.keys) {
+            val accentAlpha = (BackgroundTheme.accentTextColor(preset, signal) ushr 24) and 0xFF
+            val bodyAlpha = (BackgroundTheme.bodyTextColor(preset) ushr 24) and 0xFF
+            assertTrue("$preset: accent must be heavier than body", accentAlpha > bodyAlpha)
+        }
+    }
+
+    @Test
     fun `muted text is the body colour at fifty percent, not a new grey`() {
         // §3.2: prefer opacity over new greys — and that has to hold on light
         // presets too, where a hardcoded white-50 would be invisible.
