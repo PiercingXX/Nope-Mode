@@ -161,7 +161,7 @@ class HomeActivity : BrandActivity() {
                         ContextCompat.getColor(this@HomeActivity, R.color.pxx_signal),
                     )
                 } else {
-                    BackgroundTheme.colors(preset).text
+                    BackgroundTheme.bodyTextColor(preset)
                 }
             )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.blockedCount)

@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:textSize="48sp"
         android:textStyle="bold"
-        android:textColor="@color/pxx_paper"
+        android:textColor="@color/pxx_white_90"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
