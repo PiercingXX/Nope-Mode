@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   PiercingXX logomark (BRAND-GUIDE.md §5): an X of two bars crossing at ±45° in
-  Signal green, underlined by a white bar, on Ink.
+  Signal white, underlined by a white bar, on Ink.
 
   Traced from branding/assets/logomark.svg. That master is a 512 tile; this is
   the adaptive-icon FOREGROUND, so it is drawn on the same 512 grid but scaled
@@ -29,7 +29,7 @@
             android:pivotY="220"
             android:rotation="45">
             <path
-                android:fillColor="#9BE223"
+                android:fillColor="#FFFFFF"
                 android:pathData="M256,70 m-36,0 l72,0 a36,36 0 0 1 36,36 l0,228 a36,36 0 0 1 -36,36 l-72,0 a36,36 0 0 1 -36,-36 l0,-228 a36,36 0 0 1 36,-36 z" />
         </group>
         <group
@@ -37,7 +37,7 @@
             android:pivotY="220"
             android:rotation="-45">
             <path
-                android:fillColor="#9BE223"
+                android:fillColor="#FFFFFF"
                 android:pathData="M256,70 m-36,0 l72,0 a36,36 0 0 1 36,36 l0,228 a36,36 0 0 1 -36,36 l-72,0 a36,36 0 0 1 -36,-36 l0,-228 a36,36 0 0 1 36,-36 z" />
         </group>
 
