@@ -45,7 +45,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:fontFamily="@string/font_body"
+            android:fontFamily="@font/font_body"
             android:text="@string/master_enabled"
             android:textColor="@color/pxx_white_90"
             android:textSize="15sp" />

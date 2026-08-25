@@ -3,16 +3,12 @@
   BRAND-GUIDE.md §4: monospace IS the identity. Space Mono for display,
   JetBrains Mono for body/UI.
 
-  Those two faces are not bundled — the branding repo ships tokens and the
-  logomark but no font files, and neither face exists on stock Android. §4 says
-  to ship the actual files rather than rely on system availability, so until the
-  TTFs land here this falls back to the platform mono, which keeps the mono
-  identity even though it is not the exact face.
-
-  Indirected through strings so adopting the real fonts is a one-line change per
-  role plus the files in res/font/, with no layout edits.
+  Both faces now ship as real TTFs in res/font/ (vendored from xx-phone, the
+  family's reference implementation). The indirection stays, as same-type font
+  aliases: layouts reference @font/font_display / @font/font_body, so swapping
+  a face is a one-line change here.
 -->
 <resources>
-    <string name="font_display" translatable="false">monospace</string>
-    <string name="font_body" translatable="false">monospace</string>
+    <item name="font_display" type="font">@font/spacemono_regular</item>
+    <item name="font_body" type="font">@font/jetbrainsmono_regular</item>
 </resources>

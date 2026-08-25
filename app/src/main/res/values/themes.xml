@@ -36,7 +36,7 @@
         <item name="android:navigationBarColor">@color/pxx_ink</item>
         <item name="android:windowLightStatusBar">false</item>
 
-        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:fontFamily">@font/font_body</item>
     </style>
 
     <!-- Base for the dotted Text.* names below; a dot in a style name implies a
@@ -45,7 +45,7 @@
 
     <!-- §4 display face: the headline voice. Mono, and never bold by default. -->
     <style name="Text.Display">
-        <item name="android:fontFamily">@string/font_display</item>
+        <item name="android:fontFamily">@font/font_display</item>
         <item name="android:textColor">@color/pxx_white_90</item>
         <item name="android:textSize">32sp</item>
         <item name="android:letterSpacing">-0.01</item>
@@ -53,7 +53,7 @@
 
     <!-- Body copy at 90% white (§3.2 `text`). -->
     <style name="Text.Body">
-        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:fontFamily">@font/font_body</item>
         <item name="android:textColor">@color/pxx_white_90</item>
         <item name="android:textSize">15sp</item>
         <item name="android:lineSpacingMultiplier">1.35</item>
@@ -77,7 +77,7 @@
       competing filled buttons.
     -->
     <style name="Nav.Row" parent="Widget.Material3.Button.TextButton">
-        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:fontFamily">@font/font_body</item>
         <item name="android:textColor">@color/pxx_white_90</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
@@ -99,7 +99,7 @@
     <!-- The one filled control in the app. §3.1's strong emphasis inverts:
          a Signal-white block with Ink text. -->
     <style name="Button.Signal" parent="Widget.Material3.Button">
-        <item name="android:fontFamily">@string/font_body</item>
+        <item name="android:fontFamily">@font/font_body</item>
         <item name="android:textColor">@color/pxx_emphasis_fg</item>
         <item name="android:textSize">15sp</item>
         <item name="android:textAllCaps">false</item>

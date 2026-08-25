@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@string/font_body"
+            android:fontFamily="@font/font_body"
             android:textColor="@color/pxx_white_90"
             android:textSize="17sp" />
 
@@ -34,7 +34,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="@string/font_body"
+        android:fontFamily="@font/font_body"
         android:textColor="@color/pxx_white_50"
         android:textSize="13sp" />
 
@@ -44,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="@string/font_body"
+        android:fontFamily="@font/font_body"
         android:textColor="@color/pxx_white_50"
         android:textSize="12sp"
         android:textStyle="italic"

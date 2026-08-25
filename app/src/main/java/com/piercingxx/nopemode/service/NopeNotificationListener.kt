@@ -7,6 +7,7 @@ import android.util.Log
 import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
+import com.piercingxx.nopemode.data.SettingsStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDateTime
@@ -65,6 +66,9 @@ class NopeNotificationListener : NotificationListenerService() {
     }
 
     private fun isActive(): Boolean {
+        // The master switch gates everything (design R8): with it off, no tier
+        // may enforce — same rule HomeActivity and the tile already follow.
+        if (!SettingsStore(applicationContext).isEnabled()) return false
         val db = NopeDatabase.get(applicationContext)
         val override = OverrideMapper.toOverride(runBlocking { db.appStateDao().get() })
         val schedules = runBlocking { db.scheduleDao().observeAll().first() }

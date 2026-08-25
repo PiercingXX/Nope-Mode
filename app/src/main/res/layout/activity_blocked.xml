@@ -7,7 +7,7 @@
     android:padding="24dp">
 
     <TextView
-        android:fontFamily="@string/font_body"
+        android:fontFamily="@font/font_body"
         android:id="@+id/blockedText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -19,7 +19,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
-        android:fontFamily="@string/font_body"
+        android:fontFamily="@font/font_body"
         android:id="@+id/countdownText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

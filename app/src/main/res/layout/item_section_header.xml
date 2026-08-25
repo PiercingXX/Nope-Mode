@@ -4,7 +4,7 @@
     android:id="@+id/headerText"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fontFamily="@string/font_body"
+    android:fontFamily="@font/font_body"
     android:letterSpacing="0.04"
     android:paddingTop="22dp"
     android:paddingBottom="8dp"

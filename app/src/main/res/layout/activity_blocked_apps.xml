@@ -47,7 +47,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@null"
-        android:fontFamily="@string/font_body"
+        android:fontFamily="@font/font_body"
         android:hint="@string/blocked_apps_search_hint"
         android:imeOptions="actionSearch"
         android:importantForAutofill="no"
