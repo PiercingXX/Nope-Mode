@@ -45,6 +45,25 @@ object BackgroundTheme {
     fun colors(preset: String?): Colors = PRESETS[preset] ?: PRESETS.getValue(DEFAULT)
 
     /**
+     * Resolves a display name ("Ocean Drift") back to its preset key ("ocean").
+     *
+     * The launcher's theme-change broadcast carries the display name, not the
+     * key, so the sync receiver needs the inverse of [LABELS]. Matching is
+     * case-insensitive and whitespace-tolerant on purpose — the name crossed a
+     * process boundary, and a casing tweak on the launcher side should not
+     * silently break the sync.
+     *
+     * Returns null for anything unrecognised — including the launcher's
+     * "Custom" theme, which has no preset here. Null (not [DEFAULT]) so the
+     * caller can decline to change anything: snapping a custom launcher colour
+     * to AMOLED would be worse than keeping the preset the user already has.
+     */
+    fun presetForLabel(label: String?): String? {
+        val wanted = label?.trim() ?: return null
+        return LABELS.entries.firstOrNull { it.value.equals(wanted, ignoreCase = true) }?.key
+    }
+
+    /**
      * White on dark grounds, near-black on light ones.
      *
      * Same weights and the same 182 threshold as the launcher. Kept identical on

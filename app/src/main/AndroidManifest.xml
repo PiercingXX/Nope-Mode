@@ -106,6 +106,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- Family theme sync (BRAND-GUIDE.md §3.3). PiercingXX-Launcher
+             broadcasts its active background preset; this receiver persists it
+             into the same SettingsStore key the Settings picker writes, and
+             every BrandActivity repaints from there on resume. Exported
+             because the sender is another app; the launcher addresses this
+             package explicitly (setPackage), which Android O+ requires before
+             a manifest-declared receiver sees the broadcast at all. -->
+        <receiver
+            android:name=".ui.ThemeSyncReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="xx.launcher.THEME_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Device admin receiver. Provisioned as device owner over ADB:
              adb shell dpm set-device-owner \
                com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver -->
