@@ -10,3 +10,7 @@ captures/
 
 # Skippy runtime bookkeeping — never tracked
 .skippy/
+
+# Keystores must never be committed
+*.keystore
+*.jks
