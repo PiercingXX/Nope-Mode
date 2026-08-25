@@ -60,8 +60,9 @@ reset.
 
 Device owner is a full MDM role and carries real tradeoffs — some banking and DRM
 apps refuse to run on a managed device. Nope-Mode always exposes a **Relinquish
-device owner** action, so backing out costs nothing. Read §2.2 of
-[design.md](design.md) before provisioning.
+device owner** action, so backing out costs nothing. Read §3.1 of
+[design.md](design.md) before provisioning — and §3.2 for why the window is
+non-renewable.
 
 ## Theme sync 🌀
 
