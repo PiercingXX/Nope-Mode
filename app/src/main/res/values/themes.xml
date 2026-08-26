@@ -11,11 +11,32 @@
   Colors come from brand_colors.xml, copied verbatim from the branding repo's
   tokens/android-colors.xml — §7.7 says consume the tokens, don't retype hexes.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.NopeMode" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.NopeMode" parent="Theme.Material3.Dark.NoActionBar" tools:targetApi="31">
         <item name="android:windowBackground">@color/pxx_ink</item>
         <item name="android:colorBackground">@color/pxx_ink</item>
+
+        <!--
+          The Android 12+ starting window. The platform draws one for every cold
+          start and there is no way to decline it — the only choice is what it
+          contains. Left at its defaults it stamps the launcher icon onto a
+          ground the platform derives from the theme, which across the family
+          meant a different mark over a different ground per app: exactly the
+          inconsistency §3 exists to prevent, and a logo card §2 never asked for.
+
+          Ink ground plus a fully transparent icon reduces it to a frame of the
+          same black the window opens on, so the app appears rather than
+          announces itself. The icon background and branding slots are pinned
+          transparent/null too: they are the platform's other two chances to
+          draw a mark, and an inherited value in either would put one back.
+
+          Four theme attributes are the entire mechanism — no library.
+        -->
+        <item name="android:windowSplashScreenBackground">@color/pxx_ink</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenBrandingImage">@null</item>
 
         <!-- The one accent. Everything that wants to be noticed is pure white;
              nothing else reaches it (§3.1, the reserved-white rule). -->
