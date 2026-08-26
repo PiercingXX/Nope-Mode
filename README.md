@@ -14,12 +14,11 @@ nothing to audit.
 
 **Status:** provisioned and enforcing on a Pixel 6 running GrapheneOS — device
 owner granted, notification listener and accessibility service enabled, Do Not
-Disturb policy access held. 224 unit tests, all green.
+Disturb policy access held. 235 unit tests, all green.
 
-**The backup screen is a dead end.** `exportJson` and `restoreJson` have no
-caller outside the test suite, there is no file picker, and `restoreJson` stops
-after the validator without committing anything to the Room DAOs. It is a screen,
-not a feature.
+Quiet Ringer uses Do Not Disturb: starred contacts still ring; Android cannot
+restrict the ringer alone. Relinquish is on the Setup screen and releases
+suspended apps before dropping device owner. Backup export/restore is wired.
 
 ## How it works
 
@@ -62,8 +61,8 @@ Android 7.0+ (minSdk 24), targetSdk 35.
 ./gradlew testDebugUnitTest
 ```
 
-[design.md](design.md) is the spec; [todo.md](todo.md) is history and lags the
-code.
+[design.md](design.md) is the spec; [todo.md](todo.md) is the remaining punch
+list.
 
 ## License
 

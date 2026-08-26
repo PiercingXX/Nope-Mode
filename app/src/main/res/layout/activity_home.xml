@@ -65,6 +65,14 @@
             android:layout_marginTop="6dp"
             android:text="@string/turn_on_now" />
 
+        <Button
+            android:id="@+id/takeABreakButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/take_a_break"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/tierText"
             style="@style/Text.Muted"

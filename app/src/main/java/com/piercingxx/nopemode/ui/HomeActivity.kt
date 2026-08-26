@@ -1,26 +1,35 @@
 package com.piercingxx.nopemode.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.admin.DeviceOwnerManager
+import com.piercingxx.nopemode.core.FrictionSettings
 import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
+import com.piercingxx.nopemode.data.ReconcileStatus
 import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityHomeBinding
 import com.piercingxx.nopemode.schedule.AlarmScheduler
+import com.piercingxx.nopemode.schedule.BreakStarter
+import com.piercingxx.nopemode.service.FallbackGrants
 import com.piercingxx.nopemode.service.RingerPolicy
 import com.piercingxx.nopemode.service.TileState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -37,6 +46,8 @@ class HomeActivity : BrandActivity() {
         val active: Boolean,
         val override: Override,
         val blockedCount: Int,
+        val warning: String?,
+        val onBreak: Boolean,
     )
 
     private lateinit var binding: ActivityHomeBinding
@@ -56,6 +67,8 @@ class HomeActivity : BrandActivity() {
         binding.backupButton.setOnClickListener { open(BackupActivity::class.java) }
         binding.setupButton.setOnClickListener { open(SetupActivity::class.java) }
         binding.turnOnNowButton.setOnClickListener { onTurnOnNowClicked() }
+        binding.takeABreakButton.setOnClickListener { onTakeABreakClicked() }
+        binding.warningText.setOnClickListener { open(SetupActivity::class.java) }
         binding.masterSwitch.setOnCheckedChangeListener { _, checked ->
             // Ignore the echo from refresh() setting the switch programmatically.
             // Guarding on isPressed instead looked equivalent but silently drops
@@ -74,20 +87,6 @@ class HomeActivity : BrandActivity() {
     private fun open(target: Class<out AppCompatActivity>) {
         startActivity(Intent(this, target))
     }
-
-    /**
-     * Whether the Quiet Ringer can actually restrict the ringer.
-     *
-     * Checked by creating the rule, not by asking for the grant:
-     * `isNotificationPolicyAccessGranted` was observed returning true on-device
-     * while `addAutomaticZenRule` threw "Notification policy access denied", so
-     * the grant flag alone would have us report a working ringer that isn't.
-     */
-    private fun quietRingerWorks(): Boolean =
-        runCatching {
-            RingerPolicy(applicationContext)
-                .ensureRule(quietRingerEnabled = true, allowRepeatCallers = true) != null
-        }.getOrDefault(false)
 
     /**
      * Focus Mode's "Turn on now": force Nope-Mode active outside its schedule,
@@ -118,6 +117,61 @@ class HomeActivity : BrandActivity() {
         }
     }
 
+    private fun onTakeABreakClicked() {
+        lifecycleScope.launch {
+            val override = withContext(Dispatchers.IO) {
+                OverrideMapper.toOverride(
+                    NopeDatabase.get(applicationContext).appStateDao().get(),
+                )
+            }
+            if (override is Override.Break && Instant.now() < override.until) {
+                withContext(Dispatchers.IO) { BreakStarter.end(applicationContext) }
+                refresh()
+                return@launch
+            }
+            val refused = withContext(Dispatchers.IO) {
+                BreakStarter.blockedReason(applicationContext)
+            }
+            if (refused != null) {
+                MaterialAlertDialogBuilder(this@HomeActivity)
+                    .setMessage(refused)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                return@launch
+            }
+            requestBreakNotifications()
+            val choices = FrictionSettings.BREAK_CHOICES
+            val labels = choices.map { getString(R.string.break_minutes, it) }.toTypedArray()
+            MaterialAlertDialogBuilder(this@HomeActivity)
+                .setTitle(R.string.break_choose_title)
+                .setItems(labels) { _, which ->
+                    lifecycleScope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            BreakStarter.start(applicationContext, choices[which])
+                        }
+                        if (result is BreakStarter.Result.Refused) {
+                            MaterialAlertDialogBuilder(this@HomeActivity)
+                                .setMessage(result.reason)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show()
+                        }
+                        refresh()
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun requestBreakNotifications() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+    }
+
     override fun onResume() {
         super.onResume()
         refresh()
@@ -142,13 +196,26 @@ class HomeActivity : BrandActivity() {
                 val schedules = db.scheduleDao().observeAll().first()
                 val override = OverrideMapper.toOverride(db.appStateDao().get())
                 val blockedCount = db.blockedAppDao().observeAll().first().size
-                // The master switch gates everything, so the headline has to
-                // consult it too. Deriving from schedules alone had Home saying
-                // "Nope-Mode is ON" while the master was off and nothing at all
-                // was suspended — the exact false report R8 forbids.
-                val active = SettingsStore(applicationContext).isEnabled() &&
+                val settings = SettingsStore(applicationContext)
+                val active = settings.isEnabled() &&
                     NopeController.derive(LocalDateTime.now(), schedules, override)
-                HomeState(active, override, blockedCount)
+                val isDeviceOwnerNow =
+                    deviceOwner.tier() == DeviceOwnerManager.Tier.DEVICE_OWNER
+                val status = ReconcileStatus(applicationContext)
+                val warning = HomeStateText.warnings(
+                    quietRingerEnabled = settings.load().quietRingerEnabled,
+                    quietRingerWorking = runCatching {
+                        RingerPolicy(applicationContext).isUsable()
+                    }.getOrDefault(false),
+                    exactAlarmDegraded = status.isExactAlarmDegraded(),
+                    failedPackages = status.failedPackages(),
+                    fallback = !isDeviceOwnerNow,
+                    listenerEnabled = FallbackGrants.notificationListenerEnabled(applicationContext),
+                    accessibilityEnabled = FallbackGrants.accessibilityEnabled(applicationContext),
+                    reconcileError = status.reconcileError(),
+                )
+                val onBreak = override is Override.Break && Instant.now() < override.until
+                HomeState(active, override, blockedCount, warning, onBreak)
             }
             binding.stateText.text = HomeStateText.stateText(state.active, state.override)
             // BRAND-GUIDE §3.1, the rule of one accent: Signal white marks the
@@ -172,13 +239,21 @@ class HomeActivity : BrandActivity() {
             binding.turnOnNowButton.text =
                 getString(if (state.active) R.string.turn_off_now else R.string.turn_on_now)
 
-            // Design §18.4 / R8: a Quiet Ringer that silently does nothing is
-            // the worst outcome, so say it out loud rather than let the screen
-            // imply calls are being filtered when they are not.
-            val ringerWarning = HomeStateText.quietRingerWarning(quietRingerWorks())
-            binding.warningText.text = ringerWarning.orEmpty()
+            when {
+                state.onBreak -> {
+                    binding.takeABreakButton.visibility = View.VISIBLE
+                    binding.takeABreakButton.text = getString(R.string.end_break)
+                }
+                state.active -> {
+                    binding.takeABreakButton.visibility = View.VISIBLE
+                    binding.takeABreakButton.text = getString(R.string.take_a_break)
+                }
+                else -> binding.takeABreakButton.visibility = View.GONE
+            }
+
+            binding.warningText.text = state.warning.orEmpty()
             binding.warningText.visibility =
-                if (ringerWarning == null) View.GONE else View.VISIBLE
+                if (state.warning == null) View.GONE else View.VISIBLE
         }
     }
 }

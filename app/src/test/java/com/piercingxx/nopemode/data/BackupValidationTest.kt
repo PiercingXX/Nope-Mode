@@ -49,6 +49,13 @@ class BackupValidationTest {
     }
 
     @Test
+    fun `a newer backup version is rejected`() {
+        val result = BackupValidator.validate(payload().copy(version = BackupJson.VERSION + 1))
+        assertFalse(result.valid)
+        assertTrue(result.errors.any { it.contains("newer") })
+    }
+
+    @Test
     fun `empty collections are valid`() {
         val result = BackupValidator.validate(payload(blocked = emptyList(), sched = emptyList()))
         assertTrue(result.valid)

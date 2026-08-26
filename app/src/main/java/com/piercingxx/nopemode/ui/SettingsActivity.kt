@@ -125,8 +125,9 @@ class SettingsActivity : BrandActivity() {
 
         lifecycleScope.launch {
             val active = withContext(Dispatchers.IO) {
+                val enabled = SettingsStore(applicationContext).isEnabled()
                 val db = NopeDatabase.get(applicationContext)
-                NopeController.derive(
+                enabled && NopeController.derive(
                     LocalDateTime.now(),
                     db.scheduleDao().observeAll().first(),
                     OverrideMapper.toOverride(db.appStateDao().get()),

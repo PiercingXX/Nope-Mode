@@ -1,34 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:padding="24dp">
 
     <TextView
-        android:fontFamily="@font/font_body"
         android:id="@+id/titleText"
-        android:layout_width="wrap_content"
+        style="@style/Text.Display"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/backup_title"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/pxx_white_90"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textSize="26sp" />
 
     <TextView
-        android:fontFamily="@font/font_body"
         android:id="@+id/hintText"
-        android:layout_width="0dp"
+        style="@style/Text.Muted"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="@string/backup_hint"
-        android:textSize="16sp"
-        android:textColor="@color/pxx_white_50"
-        app:layout_constraintTop_toBottomOf="@id/titleText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:text="@string/backup_hint" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <Button
+        android:id="@+id/exportButton"
+        style="@style/Button.Signal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="@string/backup_export" />
+
+    <Button
+        android:id="@+id/restoreButton"
+        style="@style/Nav.Row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/backup_restore" />
+
+</LinearLayout>

@@ -7,8 +7,8 @@ A cleanroom equivalent of Google's Focus Mode, which does not exist on
 GrapheneOS because Digital Wellbeing is not shipped and cannot be installed
 from Play.
 
-**Status:** WS1 and WS4 landed. WS2, WS3, WS5–WS11 unbuilt.
-**Target:** Pixel 9 Pro (`caiman`), GrapheneOS, Android 17 / SDK 37.
+**Status:** Shipped — device-owner suspend, fallback listener + accessibility, schedules, picker, tile, Take a break, Relinquish, Quiet Ringer (DND; see §18.2), JSON backup, R8 warnings. compileSdk 35 / targetSdk 35 / minSdk 24.
+**Target:** Pixel 6 / Pixel 9 Pro, GrapheneOS.
 **Provisioned:** device owner is live on the target device as of 2026-08-03.
 
 ---
@@ -566,8 +566,11 @@ deactivate  : setAutomaticZenRuleState(id, Condition.STATE_FALSE)
 - **Repeat callers:** allowed iff the user toggle is on. This is a built-in
   DND category, not something Nope-Mode implements — a second call from the
   same number inside the platform's window rings through.
-- Everything else in the policy is left at its default. The rule exists to
-  restrict the ringer, not to become a general notification filter (§18.1).
+- **Every other interruption category is explicitly allowed** (alarms, media,
+  system, reminders, events, messages from anyone, conversations, all visual
+  effects). Leaving those fields UNSET inherits the user's DND defaults and
+  silences apps the user never selected. Android cannot restrict the ringer
+  alone; the UI must say this uses Do Not Disturb.
 
 Rule state is driven by the **same derived `isActive`** as everything else
 (§6). It is set inside `reconcile()`; there is no separate scheduler.

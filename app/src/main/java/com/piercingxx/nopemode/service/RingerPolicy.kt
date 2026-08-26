@@ -44,6 +44,19 @@ class RingerPolicy(private val context: Context) {
         notificationManager.isNotificationPolicyAccessGranted
 
     /**
+     * Whether Quiet Ringer can actually run. Read-only: does not create or
+     * update the zen rule. Home used [ensureRule] as a probe and that
+     * `updateRule`d existing policy with hardcoded repeat-callers-on.
+     */
+    fun isUsable(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        if (!isGranted()) return false
+        val existing = ruleId() ?: return true
+        return runCatching { notificationManager.getAutomaticZenRule(existing) != null }
+            .getOrDefault(false)
+    }
+
+    /**
      * Create the rule once and persist its id. Idempotent: a second call with
      * an already-created rule is a no-op, so it is safe to run on every
      * foreground and boot.
@@ -124,20 +137,33 @@ class RingerPolicy(private val context: Context) {
         clearRuleId()
     }
 
-    /** Map the pure config onto the framework [ZenPolicy]. */
+    /**
+     * Map the pure config onto the framework [ZenPolicy].
+     *
+     * Other categories are explicitly allowed. UNSET inherits the user's DND
+     * defaults and silences apps the user never selected.
+     */
     private fun toZenPolicy(config: ZenPolicyBuilder.Config): ZenPolicy {
         val builder = ZenPolicy.Builder()
-            .apply {
-                when (config.callAccess) {
-                    ZenPolicyBuilder.CallAccess.STARRED_ONLY ->
-                        allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
-                    ZenPolicyBuilder.CallAccess.ALL ->
-                        allowCalls(ZenPolicy.PEOPLE_TYPE_ANYONE)
-                }
-                allowRepeatCallers(config.repeatCallersAllowed)
+        if (config.allowOtherInterruptions) {
+            builder.allowAlarms(true)
+                .allowMedia(true)
+                .allowSystem(true)
+                .allowReminders(true)
+                .allowEvents(true)
+                .allowMessages(ZenPolicy.PEOPLE_TYPE_ANYONE)
+                .showAllVisualEffects()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                builder.allowConversations(ZenPolicy.CONVERSATION_SENDERS_ANYONE)
             }
-        // §18.1: no notification-category field is ever touched — the builder
-        // is left at its default for messages, reminders, alarms, events, etc.
+        }
+        when (config.callAccess) {
+            ZenPolicyBuilder.CallAccess.STARRED_ONLY ->
+                builder.allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
+            ZenPolicyBuilder.CallAccess.ALL ->
+                builder.allowCalls(ZenPolicy.PEOPLE_TYPE_ANYONE)
+        }
+        builder.allowRepeatCallers(config.repeatCallersAllowed)
         return builder.build()
     }
 

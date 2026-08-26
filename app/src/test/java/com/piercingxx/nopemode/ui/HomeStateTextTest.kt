@@ -117,4 +117,51 @@ class HomeStateTextTest {
         assertEquals("2 apps blocked.", HomeStateText.blockedCountText(2))
         assertEquals("17 apps blocked.", HomeStateText.blockedCountText(17))
     }
+
+    @Test
+    fun `quiet ringer warning is silent when disabled by choice`() {
+        assertEquals(null, HomeStateText.quietRingerWarning(enabled = false, working = false))
+    }
+
+    @Test
+    fun `quiet ringer warning names the grant when enabled but inert`() {
+        val text = HomeStateText.quietRingerWarning(enabled = true, working = false)
+        assertTrue(text!!.contains("Do Not Disturb"))
+    }
+
+    @Test
+    fun `failed packages are named rather than counted as blocked`() {
+        val text = HomeStateText.failedPackagesWarning(setOf("com.foo", "com.bar"))
+        assertTrue(text!!.contains("com.bar"))
+        assertTrue(text.contains("com.foo"))
+        assertTrue(text.contains("still openable"))
+    }
+
+    @Test
+    fun `fallback warning names whichever grants are missing`() {
+        val both = HomeStateText.fallbackGrantWarning(true, listenerEnabled = false, accessibilityEnabled = false)
+        assertTrue(both!!.contains("notification access"))
+        assertTrue(both.contains("accessibility"))
+        assertEquals(null, HomeStateText.fallbackGrantWarning(false, false, false))
+        assertEquals(null, HomeStateText.fallbackGrantWarning(true, listenerEnabled = true, accessibilityEnabled = true))
+    }
+
+    @Test
+    fun `warnings concatenate independent failures`() {
+        val text = HomeStateText.warnings(
+            quietRingerEnabled = true,
+            quietRingerWorking = false,
+            exactAlarmDegraded = true,
+            failedPackages = setOf("com.x"),
+            fallback = true,
+            listenerEnabled = false,
+            accessibilityEnabled = true,
+            reconcileError = "boom",
+        )
+        assertTrue(text!!.contains("Do Not Disturb"))
+        assertTrue(text.contains("Exact alarms"))
+        assertTrue(text.contains("com.x"))
+        assertTrue(text.contains("notification access"))
+        assertTrue(text.contains("boom"))
+    }
 }

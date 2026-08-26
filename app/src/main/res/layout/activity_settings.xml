@@ -66,6 +66,13 @@
             android:textColor="@color/pxx_white_90"
             android:textSize="15sp" />
 
+        <TextView
+            style="@style/Text.Muted"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/setting_quiet_ringer_hint" />
+
         <CheckBox
             android:id="@+id/repeatCallersCheck"
             android:layout_width="match_parent"

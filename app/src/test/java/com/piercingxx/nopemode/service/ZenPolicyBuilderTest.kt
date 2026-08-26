@@ -9,11 +9,9 @@ import org.junit.Test
 /**
  * T8 — WS11 Quiet Ringer: the pure zen-policy builder (design §18).
  *
- * The `AutomaticZenRule` is a global interruption filter, so the policy must
- * restrict the ringer only and leave every notification category untouched
- * (§18.1) — otherwise it would quiet apps the user never selected. This pins:
- * the starred-calls-only policy, the repeat-caller toggle on/off, and that no
- * notification-category field is ever set.
+ * Priority DND cannot be ringer-only, so the policy restricts calls to starred
+ * contacts and explicitly allows other interruption categories rather than
+ * inheriting user DND defaults.
  */
 class ZenPolicyBuilderTest {
 
@@ -39,12 +37,12 @@ class ZenPolicyBuilderTest {
         assertFalse(config.repeatCallersAllowed)
     }
 
-    // ---- the rule must not become a general notification filter (§18.1) ----
+    // ---- DND cannot be ringer-only: allow every non-call category ----
 
     @Test
-    fun `enabled never touches a notification category`() {
+    fun `enabled allows other interruptions so user DND defaults are not inherited`() {
         val config = ZenPolicyBuilder.build(quietRingerEnabled = true, allowRepeatCallers = true)
-        assertFalse(config.notificationCategoriesTouched)
+        assertTrue(config.allowOtherInterruptions)
     }
 
     // ---- quiet ringer disabled: the rule is inert ----
@@ -62,8 +60,8 @@ class ZenPolicyBuilderTest {
     }
 
     @Test
-    fun `disabled never touches a notification category`() {
+    fun `disabled still allows other interruptions`() {
         val config = ZenPolicyBuilder.build(quietRingerEnabled = false, allowRepeatCallers = true)
-        assertFalse(config.notificationCategoriesTouched)
+        assertTrue(config.allowOtherInterruptions)
     }
 }

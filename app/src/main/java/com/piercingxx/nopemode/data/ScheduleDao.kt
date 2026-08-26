@@ -2,6 +2,7 @@ package com.piercingxx.nopemode.data
 
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -24,4 +25,10 @@ interface ScheduleDao {
 
     @Delete
     suspend fun delete(schedule: Schedule)
+
+    @Query("DELETE FROM schedule")
+    suspend fun clear()
+
+    @Insert
+    suspend fun insertAll(schedules: List<Schedule>)
 }

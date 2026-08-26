@@ -16,7 +16,14 @@
     <string name="tile_inactive">Nope-Mode off</string>
     <string name="accessibility_service_description">Covers blocked apps with the Nope-Mode screen while active (fallback tier).</string>
     <string name="backup_title">Backup</string>
-    <string name="backup_hint">Export and restore blocked apps, schedules and friction settings as JSON. A restored file is validated before anything is committed, so a bad backup can never overwrite existing state.</string>
+    <string name="backup_hint">Export and restore blocked apps, schedules and break settings as JSON. A file is validated in full before anything is written.</string>
+    <string name="backup_export">Export</string>
+    <string name="backup_restore">Restore</string>
+    <string name="backup_exported">Exported.</string>
+    <string name="backup_export_failed">Export failed.</string>
+    <string name="backup_restored">Restored.</string>
+    <string name="backup_import_failed">Could not read that file.</string>
+    <string name="backup_malformed">That file is not a valid Nope-Mode backup.</string>
     <string name="take_a_break">Take a break</string>
     <string name="end_break">End break now</string>
     <string name="break_choose_title">How long?</string>
@@ -24,7 +31,8 @@
     <string name="grant_dnd">Grant Do Not Disturb access</string>
     <string name="dnd_granted">Do Not Disturb access: granted</string>
     <string name="settings_locked">Nope-Mode is active. Turn it off to change friction settings.</string>
-    <string name="setting_quiet_ringer">Quiet Ringer — only starred contacts ring</string>
+    <string name="setting_quiet_ringer">Quiet Ringer — starred contacts still ring (uses Do Not Disturb)</string>
+    <string name="setting_quiet_ringer_hint">Android cannot restrict the ringer alone. Quiet Ringer uses Do Not Disturb: starred contacts (and repeat callers, if on) still ring; other interruptions follow DND rules.</string>
     <string name="setting_repeat_callers">Allow repeat callers</string>
     <string name="setting_break_duration">Break length</string>
     <string name="setting_min_interval">Minimum minutes between breaks</string>
@@ -43,4 +51,19 @@
     <string name="start_at">Start %1$s</string>
     <string name="end_at">End %1$s</string>
     <string name="setting_background">Background</string>
+    <string name="grant_listener">Grant notification access</string>
+    <string name="grant_accessibility">Grant accessibility</string>
+    <string name="grant_exact_alarm">Grant Alarms &amp; reminders</string>
+    <string name="grant_listener_on">Notification access: on</string>
+    <string name="grant_listener_off">Notification access: off — blocked apps can still make a sound.</string>
+    <string name="grant_accessibility_on">Accessibility: on</string>
+    <string name="grant_accessibility_off">Accessibility: off — blocked apps can still be opened.</string>
+    <string name="relinquish_title">Relinquish device owner</string>
+    <string name="relinquish_hint">Device owner cannot be removed from system Settings. Relinquishing drops the MDM role. Getting it back costs a factory reset.</string>
+    <string name="relinquish_warning">This device will stop being managed by Nope-Mode. Suspended apps are released first. Banking and DRM apps that refused a managed device may work again. You cannot get device owner back without a factory reset. Continue?</string>
+    <string name="relinquish_confirm">Relinquish</string>
+    <string name="relinquish_failed">Could not relinquish. If apps are still suspended, turn Nope-Mode off and try again.</string>
+    <string name="suspend_failed_reason">Could not suspend — still openable.</string>
+    <string name="break_notification_title">On a break</string>
+    <string name="break_notification_text">Nope-Mode resumes when the countdown ends.</string>
 </resources>

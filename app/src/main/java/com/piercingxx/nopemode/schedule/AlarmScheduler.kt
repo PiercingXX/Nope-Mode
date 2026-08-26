@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.admin.BlockedMessage
@@ -12,12 +13,15 @@ import com.piercingxx.nopemode.data.AppStateDao
 import com.piercingxx.nopemode.data.BlockedAppDao
 import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
+import com.piercingxx.nopemode.data.ReconcileStatus
 import com.piercingxx.nopemode.data.ScheduleDao
 import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.data.SuspendRecordDao
 import com.piercingxx.nopemode.enforce.Enforcer
+import com.piercingxx.nopemode.enforce.PackagePruner
 import com.piercingxx.nopemode.enforce.SuspendEnforcer
 import com.piercingxx.nopemode.schedule.Reconciler.Tier
+import com.piercingxx.nopemode.service.BreakNotification
 import com.piercingxx.nopemode.service.RingerPolicy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -60,42 +64,75 @@ class AlarmScheduler private constructor(
 
     /**
      * Re-derive state, apply the diff, and re-arm the next boundary. Called on
-     * every alarm fire and on boot recovery.
+     * every alarm fire and on boot recovery. Does not throw: apply and arm are
+     * isolated so a denied exact-alarm grant cannot skip enforcement, and a
+     * failed apply cannot skip the next alarm (R8).
      */
     fun reconcileAndApply(now: LocalDateTime = LocalDateTime.now(zone)) {
-        // Master switch (design §11). Off means no schedule applies, so the
-        // plan derives inactive, everything is released and the alarm is
-        // cancelled — all through the normal derived path, not a special case
-        // that bypasses the enforcer (D8).
-        val enabled = SettingsStore(context).isEnabled()
-        val schedules =
-            if (enabled) runBlocking { scheduleDao.observeAll().first() } else emptyList()
-        // The override has to be dropped too, not just the schedules. An
-        // indefinite ForceOn pins the state active on its own (§6), so emptying
-        // the schedule list alone leaves the master switch unable to turn
-        // anything off — which is exactly how a tile tap became inescapable.
-        val override =
-            if (enabled) OverrideMapper.toOverride(runBlocking { appStateDao.get() })
-            else Override.None
-        val blocked = runBlocking { blockedAppDao.observeAll().first() }
-            .map { it.packageName }.toSet()
-        val currentSuspended = runBlocking { suspendRecordDao.observeAll().first() }
-            .map { it.packageName }.toSet()
+        val status = ReconcileStatus(context)
+        try {
+            val enabled = SettingsStore(context).isEnabled()
+            val storedOverride = OverrideMapper.toOverride(runBlocking { appStateDao.get() })
+            val schedules =
+                if (enabled) runBlocking { scheduleDao.observeAll().first() } else emptyList()
+            val override = if (enabled) storedOverride else Override.None
+            val blockedRaw = runBlocking { blockedAppDao.observeAll().first() }
+                .map { it.packageName }.toSet()
+            val suspendedRaw = runBlocking { suspendRecordDao.observeAll().first() }
+                .map { it.packageName }.toSet()
+            val (blocked, currentSuspended) = pruneUninstalled(blockedRaw, suspendedRaw)
 
-        val tier = currentTier()
-        val plan = Reconciler.reconcile(now, schedules, override, blocked, currentSuspended, tier)
+            val tier = currentTier()
+            val plan = Reconciler.reconcile(now, schedules, override, blocked, currentSuspended, tier)
 
-        // The enforcer's apply() takes the full desired suspended set and diffs
-        // it against its own record; reconstruct it from the plan's diff.
-        val desired = (currentSuspended - plan.toRelease) + plan.toSuspend
-        val result = enforcer.apply(desired)
-        if (!result.success) {
-            Log.w(TAG, "enforcement incomplete; failed: ${result.failed}")
+            val desired = (currentSuspended - plan.toRelease) + plan.toSuspend
+            var applyError: String? = null
+            val result = runCatching { enforcer.apply(desired) }
+                .getOrElse { e ->
+                    Log.e(TAG, "enforcer.apply threw", e)
+                    applyError = e.message ?: e.javaClass.simpleName
+                    Enforcer.Result(failed = desired)
+                }
+            status.setReconcileError(applyError)
+            status.setFailedPackages(result.failed)
+            if (!result.success) {
+                Log.w(TAG, "enforcement incomplete; failed: ${result.failed}")
+            }
+
+            applyRinger(plan.active)
+            applyBlockedMessage(plan.active, plan.nextBoundary)
+            BreakNotification.sync(context, storedOverride, enabled)
+            arm(plan)
+        } catch (e: Exception) {
+            Log.e(TAG, "reconcileAndApply failed", e)
+            status.setReconcileError(e.message ?: e.javaClass.simpleName)
         }
+    }
 
-        applyRinger(plan.active)
-        applyBlockedMessage(plan.active, plan.nextBoundary)
-        arm(plan)
+    /**
+     * Drop rows whose packages are gone. A failed or empty PackageManager
+     * read is treated as "don't know", not "everything uninstalled".
+     */
+    private fun pruneUninstalled(
+        blocked: Set<String>,
+        currentSuspended: Set<String>,
+    ): Pair<Set<String>, Set<String>> {
+        val installed = runCatching {
+            context.packageManager.getInstalledApplications(0).map { it.packageName }.toSet()
+        }.getOrElse {
+            Log.w(TAG, "could not list installed packages; skip prune", it)
+            return blocked to currentSuspended
+        }
+        if (installed.isEmpty()) return blocked to currentSuspended
+        val goneBlocked = PackagePruner.gone(blocked, installed)
+        val goneSuspended = PackagePruner.gone(currentSuspended, installed)
+        if (goneBlocked.isNotEmpty()) {
+            runBlocking { blockedAppDao.deleteByPackages(goneBlocked.toList()) }
+        }
+        if (goneSuspended.isNotEmpty()) {
+            runBlocking { suspendRecordDao.deleteByPackages(goneSuspended.toList()) }
+        }
+        return (blocked - goneBlocked) to (currentSuspended - goneSuspended)
     }
 
     /**
@@ -149,7 +186,7 @@ class AlarmScheduler private constructor(
     private fun currentTier(): Tier =
         if (dpm.isDeviceOwnerApp(context.packageName)) Tier.DEVICE_OWNER else Tier.FALLBACK
 
-    /** Arm a single exact alarm at the plan's next trigger, or cancel if none. */
+    /** Arm a single alarm at the plan's next trigger, or cancel if none. */
     private fun arm(plan: Reconciler.Plan) {
         val pi = BootReceiver.alarmPendingIntent(context)
         val trigger = AlarmMode.nextTrigger(plan, zone)
@@ -157,12 +194,31 @@ class AlarmScheduler private constructor(
             alarmManager.cancel(pi)
             return
         }
-        alarmManager.setExactAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            trigger.toEpochMilli(),
-            pi,
-        )
+        val millis = trigger.toEpochMilli()
+        val exact = canScheduleExact()
+        val status = ReconcileStatus(context)
+        try {
+            if (exact) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+            }
+            status.setExactAlarmDegraded(!exact)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "exact alarm denied; degrading to inexact", e)
+            runCatching {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+            }.onFailure { Log.e(TAG, "inexact alarm also failed", it) }
+            status.setExactAlarmDegraded(true)
+        }
     }
+
+    private fun canScheduleExact(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
 
     companion object {
         private const val TAG = "AlarmScheduler"

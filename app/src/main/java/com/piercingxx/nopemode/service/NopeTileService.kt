@@ -52,8 +52,7 @@ class NopeTileService : TileService() {
         val tap = TileState.onTap(isActive, current, activeBySchedule)
         settings.setEnabled(tap.enabled)
         runBlocking { appStateDao.upsert(OverrideMapper.toAppState(tap.override)) }
-        // Route through reconcile so enforcement follows the derived state.
-        AlarmScheduler.from(applicationContext).reconcileAndApply()
+        runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
         refresh()
     }
 

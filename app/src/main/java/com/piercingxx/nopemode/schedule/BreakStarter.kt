@@ -3,6 +3,7 @@ package com.piercingxx.nopemode.schedule
 import android.content.Context
 import com.piercingxx.nopemode.core.BreakPolicy
 import com.piercingxx.nopemode.core.FrictionSettings
+import com.piercingxx.nopemode.core.NopeController
 import com.piercingxx.nopemode.core.Override
 import com.piercingxx.nopemode.data.BreakLog
 import com.piercingxx.nopemode.data.NopeDatabase
@@ -52,11 +53,16 @@ object BreakStarter {
         val settings = SettingsStore(context).load()
 
         val schedules = runBlocking { db.scheduleDao().observeAll().first() }
+        val override = OverrideMapper.toOverride(runBlocking { db.appStateDao().get() })
+        val enabled = SettingsStore(context).isEnabled()
+        val isActive = enabled && NopeController.derive(now, schedules, override)
         val recent = runBlocking { db.breakLogDao().mostRecent() }
         val lastStartedAt = recent?.let { Instant.ofEpochMilli(it.startedAt) }
         val breaks = runBlocking { recentBreaks(db) }
 
-        val blocked = BreakPolicy.breakBlockedReason(now, schedules, breaks, lastStartedAt, settings)
+        val blocked = BreakPolicy.breakBlockedReason(
+            now, schedules, breaks, lastStartedAt, settings, isActive,
+        )
         if (blocked != null) return Result.Refused(blocked)
 
         val startedAt = Instant.now()
@@ -99,6 +105,9 @@ object BreakStarter {
     ): String? {
         val db = NopeDatabase.get(context.applicationContext)
         val schedules = runBlocking { db.scheduleDao().observeAll().first() }
+        val override = OverrideMapper.toOverride(runBlocking { db.appStateDao().get() })
+        val enabled = SettingsStore(context).isEnabled()
+        val isActive = enabled && NopeController.derive(now, schedules, override)
         val recent = runBlocking { db.breakLogDao().mostRecent() }
         val breaks = runBlocking { recentBreaks(db) }
         return BreakPolicy.breakBlockedReason(
@@ -107,6 +116,7 @@ object BreakStarter {
             breaks,
             recent?.let { Instant.ofEpochMilli(it.startedAt) },
             settings,
+            isActive,
         )
     }
 }

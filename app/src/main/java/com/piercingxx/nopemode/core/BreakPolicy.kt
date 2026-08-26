@@ -51,17 +51,23 @@ object BreakPolicy {
     /**
      * Remaining break budget in the current active window. When Nope-Mode is
      * inactive there is no active window to consume budget, so the full budget
-     * is available.
+     * is available. [isActive] covers ForceOn outside a schedule: budget then
+     * counts from local midnight rather than refusing the break entirely.
      */
     fun budgetRemaining(
         now: LocalDateTime,
         schedules: List<Schedule>,
         breaks: List<BreakLog>,
         budget: Int = DEFAULT_BUDGET,
+        isActive: Boolean = currentWindowStart(now, schedules) != null,
     ): Int {
-        val windowStart = currentWindowStart(now, schedules) ?: return budget
-        val windowStartMillis = windowStart.atZone(zone).toInstant().toEpochMilli()
-        val used = breaks.count { it.startedAt >= windowStartMillis }
+        val windowStart = currentWindowStart(now, schedules)
+        val startMillis = when {
+            windowStart != null -> windowStart.atZone(zone).toInstant().toEpochMilli()
+            isActive -> now.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
+            else -> return budget
+        }
+        val used = breaks.count { it.startedAt >= startMillis }
         return (budget - used).coerceAtLeast(0)
     }
 
@@ -69,6 +75,9 @@ object BreakPolicy {
      * True when a break may be taken right now: Nope-Mode must be active (there
      * is something to take a break from), the minimum interval must have elapsed,
      * and the budget must not be exhausted.
+     *
+     * [isActive] is derived state (master on AND schedule/ForceOn). Window start
+     * alone refuses a daytime ForceOn, which is still something to break from.
      */
     fun isBreakAllowed(
         now: LocalDateTime,
@@ -76,9 +85,12 @@ object BreakPolicy {
         breaks: List<BreakLog>,
         lastBreakStartedAt: Instant?,
         settings: FrictionSettings = FrictionSettings(),
+        isActive: Boolean = currentWindowStart(now, schedules) != null,
     ): Boolean {
-        if (currentWindowStart(now, schedules) == null) return false
-        if (budgetRemaining(now, schedules, breaks, settings.breakBudgetPerWindow) <= 0) return false
+        if (!isActive) return false
+        if (budgetRemaining(now, schedules, breaks, settings.breakBudgetPerWindow, isActive) <= 0) {
+            return false
+        }
         return minIntervalElapsed(
             now.atZone(zone).toInstant(),
             lastBreakStartedAt,
@@ -97,11 +109,14 @@ object BreakPolicy {
         breaks: List<BreakLog>,
         lastBreakStartedAt: Instant?,
         settings: FrictionSettings = FrictionSettings(),
+        isActive: Boolean = currentWindowStart(now, schedules) != null,
     ): String? {
-        if (currentWindowStart(now, schedules) == null) {
+        if (!isActive) {
             return "Nope-Mode is not active — there is nothing to take a break from."
         }
-        val remaining = budgetRemaining(now, schedules, breaks, settings.breakBudgetPerWindow)
+        val remaining = budgetRemaining(
+            now, schedules, breaks, settings.breakBudgetPerWindow, isActive,
+        )
         if (remaining <= 0) {
             return "No breaks left in this window. The budget resets when the window ends."
         }

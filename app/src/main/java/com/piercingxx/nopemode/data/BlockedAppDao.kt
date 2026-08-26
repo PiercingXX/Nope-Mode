@@ -27,4 +27,13 @@ interface BlockedAppDao {
 
     @Query("DELETE FROM blocked_app WHERE packageName = :packageName")
     suspend fun deleteByPackage(packageName: String)
+
+    @Query("DELETE FROM blocked_app WHERE packageName IN (:packageNames)")
+    suspend fun deleteByPackages(packageNames: List<String>)
+
+    @Query("DELETE FROM blocked_app")
+    suspend fun clear()
+
+    @Insert
+    suspend fun insertAll(apps: List<BlockedApp>)
 }

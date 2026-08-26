@@ -43,18 +43,72 @@ object HomeStateText {
     }
 
     /**
-     * The Quiet Ringer warning, or null when it is genuinely working.
-     *
-     * Design §18.4 and R8: never let the screen imply calls are being filtered
-     * while the zen rule is inert. Silence here would be the failure.
+     * The Quiet Ringer warning, or null when it is off by choice or genuinely
+     * working. Design §18.4 and R8: never imply calls are filtered while the
+     * zen rule is inert.
      */
-    fun quietRingerWarning(working: Boolean): String? =
-        if (working) {
+    fun quietRingerWarning(enabled: Boolean, working: Boolean): String? =
+        if (!enabled || working) {
             null
         } else {
             "Quiet Ringer is OFF — calls ring normally. " +
-                "Grant Do Not Disturb access in Settings to restrict the ringer."
+                "Grant Do Not Disturb access in Setup to restrict the ringer."
         }
+
+    fun exactAlarmWarning(degraded: Boolean): String? =
+        if (!degraded) {
+            null
+        } else {
+            "Exact alarms are off — the 20:00 boundary may drift by minutes. " +
+                "Grant Alarms & reminders in Setup."
+        }
+
+    fun failedPackagesWarning(failed: Set<String>): String? =
+        if (failed.isEmpty()) {
+            null
+        } else {
+            "Could not suspend: ${failed.sorted().joinToString()}. " +
+                "Those apps are still openable."
+        }
+
+    fun fallbackGrantWarning(
+        fallback: Boolean,
+        listenerEnabled: Boolean,
+        accessibilityEnabled: Boolean,
+    ): String? {
+        if (!fallback) return null
+        val missing = buildList {
+            if (!listenerEnabled) add("notification access")
+            if (!accessibilityEnabled) add("accessibility")
+        }
+        if (missing.isEmpty()) return null
+        return "Limited enforcement is incomplete — ${missing.joinToString(" and ")} " +
+            "off. Blocked apps can still notify or open. Grant them in Setup."
+    }
+
+    fun reconcileErrorWarning(message: String?): String? =
+        message?.takeIf { it.isNotBlank() }?.let { "Last reconcile failed: $it" }
+
+    /** Home warning block. Null when there is nothing to say. */
+    fun warnings(
+        quietRingerEnabled: Boolean,
+        quietRingerWorking: Boolean,
+        exactAlarmDegraded: Boolean,
+        failedPackages: Set<String>,
+        fallback: Boolean,
+        listenerEnabled: Boolean,
+        accessibilityEnabled: Boolean,
+        reconcileError: String?,
+    ): String? {
+        val parts = listOfNotNull(
+            quietRingerWarning(quietRingerEnabled, quietRingerWorking),
+            exactAlarmWarning(exactAlarmDegraded),
+            failedPackagesWarning(failedPackages),
+            fallbackGrantWarning(fallback, listenerEnabled, accessibilityEnabled),
+            reconcileErrorWarning(reconcileError),
+        )
+        return parts.takeIf { it.isNotEmpty() }?.joinToString("\n\n")
+    }
 
     /** The enforcement tier line (design §5) — honest about what tier is live. */
     fun tierText(isDeviceOwner: Boolean): String =

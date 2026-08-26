@@ -38,6 +38,13 @@ object BackupValidator {
     fun validate(data: BackupJson.BackupData): Result {
         val errors = mutableListOf<String>()
 
+        if (data.version > BackupJson.VERSION) {
+            errors += "backup version ${data.version} is newer than this app"
+        }
+        if (data.version < 1) {
+            errors += "backup version ${data.version} is invalid"
+        }
+
         data.blockedApps.forEach { app ->
             if (app.packageName.isBlank()) {
                 errors += "blocked app has a blank package name"

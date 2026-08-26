@@ -1,58 +1,106 @@
 package com.piercingxx.nopemode.ui
 
+import android.net.Uri
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.data.BackupJson
+import com.piercingxx.nopemode.data.BackupRestorer
 import com.piercingxx.nopemode.data.BackupValidator
+import com.piercingxx.nopemode.data.NopeDatabase
+import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityBackupBinding
+import com.piercingxx.nopemode.schedule.AlarmScheduler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
- * T10 — WS10 backup/restore (design §10, WS14). Exports blocked apps, schedules
- * and friction settings as JSON, and restores them from a validated payload.
- *
- * Restore is gated by [BackupValidator]: a payload is committed to the database
- * only when [BackupValidator.validate] returns a valid result, so a bad or
- * malformed backup file can never partially overwrite existing state (design
- * §14). The pure, JVM-provable decision slice is [BackupValidator] and
- * [BackupJson]; this class only maps those onto the Room DAOs.
- *
- * The file picker / on-device wiring is deferred to the operator's on-device
- * check (design §16); this screen exists so the flow is reachable.
+ * Export / restore blocked apps, schedules, and friction settings as JSON.
+ * Restore commits only after [BackupValidator] accepts the payload.
  */
 class BackupActivity : BrandActivity() {
 
     private lateinit var binding: ActivityBackupBinding
+
+    private val createDoc = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) exportTo(uri)
+    }
+
+    private val openDoc = registerForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) importFrom(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBackupBinding.inflate(layoutInflater)
         setContentView(binding.root)
         applyTheme()
+        binding.exportButton.setOnClickListener {
+            createDoc.launch("nopemode-backup.json")
+        }
+        binding.restoreButton.setOnClickListener {
+            openDoc.launch(arrayOf("application/json", "text/*", "*/*"))
+        }
     }
 
-    /**
-     * Serialize the given state to a JSON backup string. The caller supplies the
-     * live rows (read from the Room DAOs); this is the pure serialize half of
-     * the round-trip.
-     */
-    fun exportJson(
-        blockedApps: List<com.piercingxx.nopemode.data.BlockedApp>,
-        schedules: List<com.piercingxx.nopemode.data.Schedule>,
-        settings: BackupJson.Settings
-    ): String = BackupJson.export(blockedApps, schedules, settings)
+    private fun exportTo(uri: Uri) {
+        lifecycleScope.launch {
+            val json = withContext(Dispatchers.IO) {
+                val db = NopeDatabase.get(applicationContext)
+                val settings = SettingsStore(applicationContext).load()
+                BackupJson.export(
+                    db.blockedAppDao().observeAll().first(),
+                    db.scheduleDao().observeAll().first(),
+                    BackupJson.Settings(
+                        breakDurationMinutes = settings.breakDurationMinutes,
+                        minIntervalMinutes = settings.minIntervalMinutes,
+                        breakBudgetPerWindow = settings.breakBudgetPerWindow,
+                    ),
+                )
+            }
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+                        ?: error("could not open output")
+                }.isSuccess
+            }
+            Toast.makeText(
+                this@BackupActivity,
+                if (ok) R.string.backup_exported else R.string.backup_export_failed,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
 
-    /**
-     * Restore a JSON backup string. Returns the validation errors when the
-     * payload is rejected, or null when it passed the gate and is ready to be
-     * committed. Nothing is written unless the payload passes
-     * [BackupValidator.validate].
-     */
-    fun restoreJson(json: String): List<String>? {
-        val data = BackupJson.import(json) ?: return listOf("malformed backup")
-        val result = BackupValidator.validate(data)
-        if (!result.valid) return result.errors
-        // Commit the validated payload to the Room DAOs. The commit itself is
-        // on-device wiring; the pure gate above is what this task verifies.
-        return null
+    private fun importFrom(uri: Uri) {
+        lifecycleScope.launch {
+            val message = withContext(Dispatchers.IO) {
+                val json = runCatching {
+                    contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
+                }.getOrNull() ?: return@withContext getString(R.string.backup_import_failed)
+                val data = BackupJson.import(json)
+                    ?: return@withContext getString(R.string.backup_malformed)
+                val result = BackupValidator.validate(data)
+                if (!result.valid) {
+                    return@withContext result.errors.joinToString("\n")
+                }
+                BackupRestorer.restore(
+                    NopeDatabase.get(applicationContext),
+                    SettingsStore(applicationContext),
+                    data,
+                )
+                runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
+                getString(R.string.backup_restored)
+            }
+            Toast.makeText(this@BackupActivity, message, Toast.LENGTH_LONG).show()
+        }
     }
 }

@@ -155,6 +155,33 @@ class BreakPolicyTest {
         assertFalse(BreakPolicy.isBreakAllowed(at(2026, 8, 10, 12, 0), listOf(defaultWindow), emptyList(), null))
     }
 
+    @Test
+    fun `force-on outside a schedule window still allows a break`() {
+        assertTrue(
+            BreakPolicy.isBreakAllowed(
+                at(2026, 8, 10, 12, 0),
+                listOf(defaultWindow),
+                emptyList(),
+                null,
+                isActive = true,
+            )
+        )
+    }
+
+    @Test
+    fun `force-on budget counts breaks since local midnight`() {
+        val breaks = listOf(breakLog(2026, 8, 10, 9, 0))
+        assertEquals(
+            2,
+            BreakPolicy.budgetRemaining(
+                at(2026, 8, 10, 12, 0),
+                listOf(defaultWindow),
+                breaks,
+                isActive = true,
+            ),
+        )
+    }
+
     // ---- friction settings lock ----
 
     @Test

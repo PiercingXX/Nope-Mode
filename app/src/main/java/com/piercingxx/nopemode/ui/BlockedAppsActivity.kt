@@ -11,8 +11,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.piercingxx.nopemode.R
 import com.piercingxx.nopemode.data.BlockedApp
 import com.piercingxx.nopemode.data.NopeDatabase
+import com.piercingxx.nopemode.data.ReconcileStatus
 import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivityBlockedAppsBinding
 import com.piercingxx.nopemode.databinding.ItemBlockedAppBinding
@@ -119,12 +121,14 @@ class BlockedAppsActivity : BrandActivity() {
     }
 
     private fun render() {
+        val failed = ReconcileStatus(this).failedPackages()
+            .associateWith { getString(R.string.suspend_failed_reason) }
         val items = AppPicker.sections(
             installed = installed,
             blocked = blocked,
             hardBlocked = protections.hardBlocked,
             requiresConfirmation = protections.requiresConfirmation,
-            advisories = protections.advisories,
+            advisories = protections.advisories + failed,
             query = query,
         )
         adapter.submit(items, icons)
@@ -153,6 +157,7 @@ class BlockedAppsActivity : BrandActivity() {
                 // through the loop, never straight at the enforcer (D8).
                 runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
             }
+            render()
         }
     }
 

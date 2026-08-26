@@ -5,16 +5,15 @@ package com.piercingxx.nopemode.service
  * Pure — no `android.*` at this layer, so it is JVM-provable and covered by
  * [ZenPolicyBuilderTest].
  *
- * The `AutomaticZenRule` is a **global** interruption filter. It must never be
- * used to silence app notifications generally — the blocked-app list already
- * silences the apps it covers, and quieting anything else would break the
- * app's central promise that it only touches what you picked (§18.1). So this
- * builder only ever restricts the **ringer**:
+ * The `AutomaticZenRule` is a **global** interruption filter. Android has no
+ * "ringer only" mode: Priority DND suppresses anything that is not an allowed
+ * category. Leaving other fields UNSET inherits the user's DND defaults
+ * (AOSP: reminders and events off) and silences apps the user never picked —
+ * the §18.1 failure.
  *
- * - Calls ring through from **starred contacts only**.
- * - Repeat callers ring through iff the user toggle is on (a built-in DND
- *   category, not something Nope-Mode implements).
- * - Every other category is left at its default and reported as untouched.
+ * Closest honest mapping: allow every non-call category the API exposes, and
+ * restrict **calls** to starred contacts. Repeat callers follow the user
+ * toggle. The UI must say this uses Do Not Disturb.
  */
 object ZenPolicyBuilder {
 
@@ -23,9 +22,7 @@ object ZenPolicyBuilder {
 
     /**
      * The pure, framework-free description of the zen rule's policy. The
-     * Android wiring ([RingerPolicy]) maps this onto
-     * `android.app.NotificationManager.Policy`; keeping the description pure
-     * lets the decision logic be unit-tested on the JVM.
+     * Android wiring ([RingerPolicy]) maps this onto [android.service.notification.ZenPolicy].
      */
     data class Config(
         /** How calls are treated. [CallAccess.STARRED_ONLY] when quieting. */
@@ -33,34 +30,32 @@ object ZenPolicyBuilder {
         /** Whether a second call from the same number may ring through. */
         val repeatCallersAllowed: Boolean,
         /**
-         * True iff any notification-category field (messages, reminders,
-         * alarms, events, media, system, etc.) was touched. The rule exists to
-         * restrict the ringer only, so this must stay false (§18.1).
+         * When true, every non-call interruption category is allowed so the
+         * rule does not inherit the user's DND defaults. Always true: DND
+         * cannot be ringer-only, so this is the least-harmful mapping.
          */
-        val notificationCategoriesTouched: Boolean,
+        val allowOtherInterruptions: Boolean,
     )
 
     /**
      * Build the policy description from the two Quiet Ringer settings.
      *
-     * When [quietRingerEnabled] is false the rule is off entirely and nothing
-     * is restricted — the config reports the ringer unrestricted. When enabled
-     * the ringer is limited to starred contacts, repeat callers follow the
-     * user's [allowRepeatCallers] toggle, and no notification category is ever
-     * touched.
+     * When [quietRingerEnabled] is false the rule is off and calls are
+     * unrestricted. When enabled, calls are starred-only; other interruptions
+     * are explicitly allowed.
      */
     fun build(quietRingerEnabled: Boolean, allowRepeatCallers: Boolean): Config =
         if (!quietRingerEnabled) {
             Config(
                 callAccess = CallAccess.ALL,
                 repeatCallersAllowed = allowRepeatCallers,
-                notificationCategoriesTouched = false,
+                allowOtherInterruptions = true,
             )
         } else {
             Config(
                 callAccess = CallAccess.STARRED_ONLY,
                 repeatCallersAllowed = allowRepeatCallers,
-                notificationCategoriesTouched = false,
+                allowOtherInterruptions = true,
             )
         }
 }
