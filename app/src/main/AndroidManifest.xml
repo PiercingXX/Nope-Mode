@@ -29,6 +29,12 @@
     <!-- Deliberately NO android.permission.INTERNET. Nope-Mode never talks to
          a network; keeping this absent makes that claim verifiable. -->
 
+    <!-- Family theme-sync. Do NOT <permission>-declare THEME_SYNC: this app
+         is signed with a different key than XX-Launcher, and a second
+         declaration is INSTALL_FAILED_DUPLICATE_PERMISSION. The receiver is
+         still gated by android:permission so only the launcher can send. -->
+    <uses-permission android:name="com.piercingxx.xxlauncher.permission.THEME_SYNC" />
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -115,7 +121,8 @@
              a manifest-declared receiver sees the broadcast at all. -->
         <receiver
             android:name=".ui.ThemeSyncReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="com.piercingxx.xxlauncher.permission.THEME_SYNC">
             <intent-filter>
                 <action android:name="xx.launcher.THEME_CHANGED" />
             </intent-filter>
