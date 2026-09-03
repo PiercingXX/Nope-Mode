@@ -15,3 +15,7 @@ captures/
 # Keystores must never be committed
 *.keystore
 *.jks
+
+# Estate mill/audit scratch — never tracked
+.nagatha/
+.bilby/
