@@ -3,7 +3,6 @@ package com.piercingxx.nopemode.ui
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.piercingxx.nopemode.data.SettingsStore
 
 /**
@@ -61,26 +60,12 @@ class ThemeSyncReceiver(
     },
 ) : BroadcastReceiver() {
 
-    /** The most recently applied theme name, as set by [applyTheme]. */
-    private var currentTheme: String = ""
-
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != action) return
 
         val name = extractThemeName(intent) ?: return
         val preset = BackgroundTheme.presetForLabel(name) ?: return
         persistPreset(context, preset)
-    }
-
-    /**
-     * Records the given theme name as the current theme and logs it. This is the
-     * single entry point for applying a theme to this receiver; it keeps the
-     * receiver's own view of the active theme in sync with whatever the caller
-     * applied.
-     */
-    fun applyTheme(theme: String) {
-        currentTheme = theme
-        Log.d("ThemeSync", "Applied theme: $theme")
     }
 
     companion object {

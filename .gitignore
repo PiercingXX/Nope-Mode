@@ -7,6 +7,7 @@ build/
 captures/
 .externalNativeBuild
 .cxx
+.kotlin/
 
 # Skippy runtime bookkeeping — never tracked
 .skippy/
