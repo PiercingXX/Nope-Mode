@@ -226,9 +226,10 @@ class HomeActivity : BrandActivity() {
                     BackgroundTheme.accentTextColor(
                         preset,
                         ContextCompat.getColor(this@HomeActivity, R.color.pxx_signal),
+                        customBackground,
                     )
                 } else {
-                    BackgroundTheme.bodyTextColor(preset)
+                    BackgroundTheme.bodyTextColor(preset, customBackground)
                 }
             )
             binding.blockedCountText.text = HomeStateText.blockedCountText(state.blockedCount)

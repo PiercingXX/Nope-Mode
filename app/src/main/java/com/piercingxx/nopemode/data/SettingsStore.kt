@@ -45,7 +45,26 @@ class SettingsStore(context: Context) {
         prefs.getString(KEY_BG_PRESET, null) ?: "amoled"
 
     fun setBackgroundPreset(preset: String) {
-        prefs.edit().putString(KEY_BG_PRESET, preset).apply()
+        // A named preset and a custom colour are mutually exclusive: picking a
+        // named one clears any launcher custom colour so the preset shows again.
+        prefs.edit()
+            .putString(KEY_BG_PRESET, preset)
+            .remove(KEY_CUSTOM_BG)
+            .apply()
+    }
+
+    /**
+     * A raw background ARGB synced from the launcher's Custom theme
+     * (BRAND-GUIDE.md §3.3). Null when the user is on a named preset; present
+     * only after a launcher broadcast carried an unresolvable theme name with a
+     * BACKGROUND extra. [com.piercingxx.nopemode.ui.BrandActivity] honours this
+     * over the named preset.
+     */
+    fun customBackground(): Int? =
+        if (prefs.contains(KEY_CUSTOM_BG)) prefs.getInt(KEY_CUSTOM_BG, 0) else null
+
+    fun setCustomBackground(color: Int) {
+        prefs.edit().putInt(KEY_CUSTOM_BG, color).apply()
     }
 
     fun load(): FrictionSettings {
@@ -78,5 +97,6 @@ class SettingsStore(context: Context) {
         const val KEY_REPEAT_CALLERS = "allow_repeat_callers"
         const val KEY_ENABLED = "master_enabled"
         const val KEY_BG_PRESET = "background_preset"
+        const val KEY_CUSTOM_BG = "custom_background"
     }
 }

@@ -51,6 +51,10 @@ object ProtectedPackages {
 
         hard[context.packageName] = "Nope-Mode itself — suspending it would leave no way to turn it off"
 
+        // The family clock must stay reachable — it is how everyone in the house
+        // tells the time, so it is never a candidate for suspension.
+        hard.putIfAbsent(XXCLOCK_PACKAGE, "The family clock — it must stay reachable")
+
         activeAdminPackages(context).forEach { pkg ->
             if (pkg != context.packageName) {
                 hard.putIfAbsent(pkg, "An active device admin — the platform refuses to suspend it")
@@ -111,19 +115,19 @@ object ProtectedPackages {
         return dpm?.activeAdmins.orEmpty().map { it.packageName }
     }
 
-    private fun homeLauncher(pm: PackageManager): String? {
+    private fun homeLauncher(pm: PackageManager): String? = runCatching {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        return pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
             ?.activityInfo?.packageName
-    }
+    }.getOrNull()
 
-    private fun activeInputMethod(context: Context): String? {
+    private fun activeInputMethod(context: Context): String? = runCatching {
         val flat = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.DEFAULT_INPUT_METHOD,
-        ) ?: return null
-        return ComponentName.unflattenFromString(flat)?.packageName
-    }
+        ) ?: return@runCatching null
+        ComponentName.unflattenFromString(flat)?.packageName
+    }.getOrNull()
 
     /**
      * `ACTION_INSTALL_PACKAGE` is deprecated as a way to *start* an install, but
@@ -131,11 +135,11 @@ object ProtectedPackages {
      * We only resolve it; we never fire it.
      */
     @Suppress("DEPRECATION")
-    private fun packageInstaller(pm: PackageManager): String? {
+    private fun packageInstaller(pm: PackageManager): String? = runCatching {
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
-        return pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
             ?.activityInfo?.packageName
-    }
+    }.getOrNull()
 
     private fun defaultDialer(context: Context): String? {
         val tm = context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager
@@ -154,6 +158,8 @@ object ProtectedPackages {
         }.getOrNull()
 
     private const val ACTION_MANAGE_PERMISSIONS = "android.intent.action.MANAGE_PERMISSIONS"
+
+    private const val XXCLOCK_PACKAGE = "com.piercingxx.xxclock"
 
     private fun defaultSms(context: Context): String? =
         runCatching { Telephony.Sms.getDefaultSmsPackage(context) }.getOrNull()

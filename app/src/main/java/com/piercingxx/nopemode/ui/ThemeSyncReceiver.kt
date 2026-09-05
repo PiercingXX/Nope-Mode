@@ -17,12 +17,13 @@ import com.piercingxx.nopemode.data.SettingsStore
  * every screen extends [BrandActivity], which re-reads the preset and repaints
  * on `onResume`. No new theme plumbing, just a second writer to the one store.
  *
- * "Custom" (and any other unrecognised name) is deliberately a no-op. The
- * broadcast also carries the resolved background colour ([EXTRA_BACKGROUND]),
- * but Nope-Mode's model is the seven named presets — [SettingsStore] holds a
- * preset key, not a colour, and BRAND-GUIDE.md §3.3 says to reuse the shared
- * names rather than grow a parallel scheme. Keeping the user's current preset
- * beats snapping a custom launcher colour to the wrong named one.
+ * An unresolvable name is the launcher's "Custom" theme, which has no preset
+ * here. Rather than a no-op, the receiver honours the resolved background
+ * colour the broadcast carries ([EXTRA_BACKGROUND]) through
+ * [SettingsStore.setCustomBackground], and [BrandActivity] paints that custom
+ * colour over the named preset. If the broadcast carries no colour either, the
+ * user's current preset is left alone — snapping a custom launcher colour to a
+ * wrong named one would be worse than keeping what the user already has.
  *
  * Manifest-declared and exported: the sender is another app, and it targets
  * this package explicitly (`Intent.setPackage`), which Android O+ requires
@@ -45,6 +46,14 @@ class ThemeSyncReceiver(
         SettingsStore(context).setBackgroundPreset(preset)
     },
     /**
+     * Persists a launcher Custom theme's background ARGB. Defaults to
+     * [SettingsStore.setCustomBackground]; injectable so a JVM unit test can
+     * capture the write in memory.
+     */
+    private val persistCustomBackground: (Context, Int) -> Unit = { context, color ->
+        SettingsStore(context).setCustomBackground(color)
+    },
+    /**
      * Action string to match against the inbound [Intent]. Defaults to the
      * launcher's action; injectable so a JVM unit test can drive [onReceive]
      * without the Android stub returning null.
@@ -58,14 +67,30 @@ class ThemeSyncReceiver(
     private val extractThemeName: (Intent) -> String? = { intent ->
         intent.getStringExtra(EXTRA_THEME_NAME)
     },
+    /**
+     * Extracts the resolved background ARGB from the [Intent]. Defaults to
+     * reading [EXTRA_BACKGROUND]; injectable so a JVM unit test can supply a
+     * colour without stubbing the extras bundle.
+     */
+    private val extractBackground: (Intent) -> Int? = { intent ->
+        if (intent.hasExtra(EXTRA_BACKGROUND)) intent.getIntExtra(EXTRA_BACKGROUND, 0) else null
+    },
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != action) return
 
-        val name = extractThemeName(intent) ?: return
-        val preset = BackgroundTheme.presetForLabel(name) ?: return
-        persistPreset(context, preset)
+        val name = extractThemeName(intent)
+        val preset = name?.let { BackgroundTheme.presetForLabel(it) }
+        if (preset != null) {
+            persistPreset(context, preset)
+            return
+        }
+        // Unresolvable name — the launcher's Custom theme. Honour its resolved
+        // background colour if the broadcast carried one; otherwise leave the
+        // user's current preset alone rather than snapping to a wrong one.
+        val background = extractBackground(intent) ?: return
+        persistCustomBackground(context, background)
     }
 
     companion object {

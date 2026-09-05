@@ -22,11 +22,42 @@ import com.piercingxx.nopemode.data.SettingsStore
  */
 abstract class BrandActivity : AppCompatActivity() {
 
+    /**
+     * Live-repaint relay: while this screen is started it listens for the
+     * launcher's theme-change broadcast and repaints in place, so a preset that
+     * changes while the screen is already foregrounded does not wait for the
+     * next `onResume` to show. Created lazily so `onStart`/`onStop` register and
+     * unregister the one receiver across the activity's started lifetime.
+     */
+    private val themeRelay by lazy {
+        ThemeRelay(this).apply { onThemeChanged = { applyTheme() } }
+    }
+
     protected val preset: String
         get() = SettingsStore(this).backgroundPreset()
 
+    /**
+     * A launcher Custom theme's ARGB synced via [ThemeSyncReceiver], or null on
+     * a named preset. Exposed so subclasses can derive text colours from the
+     * same custom ground [applyTheme] paints, rather than only from the preset.
+     */
+    protected val customBackground: Int?
+        get() = SettingsStore(this).customBackground()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Live-repaint: while started, a launcher theme-change broadcast repaints
+        // immediately rather than waiting for the next onResume.
+        themeRelay.start()
+    }
+
+    override fun onStop() {
+        themeRelay.stop()
+        super.onStop()
     }
 
     override fun onResume() {
@@ -36,7 +67,7 @@ abstract class BrandActivity : AppCompatActivity() {
 
     /** Repaint after `setContentView`; safe to call again on resume. */
     protected fun applyTheme() {
-        val colors = BackgroundTheme.colors(preset)
+        val colors = BackgroundTheme.colors(preset, customBackground)
         val content = findViewById<ViewGroup>(android.R.id.content) ?: return
         content.setBackgroundColor(colors.background)
         // Paint the layout's own root too. A layout that sets its own
@@ -49,11 +80,14 @@ abstract class BrandActivity : AppCompatActivity() {
         window.navigationBarColor = colors.background
         // Light grounds need dark system-bar icons or they vanish.
         WindowInsetsControllerCompat(window, root).apply {
-            isAppearanceLightStatusBars = BackgroundTheme.isLight(preset)
-            isAppearanceLightNavigationBars = BackgroundTheme.isLight(preset)
+            isAppearanceLightStatusBars = BackgroundTheme.isLight(preset, customBackground)
+            isAppearanceLightNavigationBars = BackgroundTheme.isLight(preset, customBackground)
         }
 
-        retintText(root as? ViewGroup ?: return, BackgroundTheme.bodyTextColor(preset))
+        retintText(
+            root as? ViewGroup ?: return,
+            BackgroundTheme.bodyTextColor(preset, customBackground),
+        )
     }
 
     /**
@@ -74,7 +108,7 @@ abstract class BrandActivity : AppCompatActivity() {
     private fun retintText(group: ViewGroup, textColor: Int) {
         val body = getColor(R.color.pxx_white_90)
         val muted = getColor(R.color.pxx_white_50)
-        val mutedTarget = BackgroundTheme.mutedTextColor(preset)
+        val mutedTarget = BackgroundTheme.mutedTextColor(preset, customBackground)
 
         fun walk(view: View) {
             if (view is ViewGroup) {

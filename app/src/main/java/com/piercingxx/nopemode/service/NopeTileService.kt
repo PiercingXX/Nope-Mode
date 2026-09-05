@@ -4,17 +4,12 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.piercingxx.nopemode.R
 import android.os.Build
-import com.piercingxx.nopemode.core.NextBoundary
-import com.piercingxx.nopemode.core.NopeController
-import com.piercingxx.nopemode.core.Override
-import com.piercingxx.nopemode.data.NopeDatabase
-import com.piercingxx.nopemode.data.OverrideMapper
-import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.schedule.AlarmScheduler
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import java.time.LocalDateTime
-import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
  * WS8 — the Quick Settings tile (design §11.1). A single toggle that reflects
@@ -32,6 +27,14 @@ import java.time.ZoneId
  */
 class NopeTileService : TileService() {
 
+    /**
+     * The tile's coroutine home. Room work runs on [Dispatchers.IO] inside
+     * [TileLoader]; this scope stays on the main thread and only repaints.
+     * Cancelled when the service is torn down so a stale repaint cannot outlive
+     * the tile.
+     */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     override fun onStartListening() {
         super.onStartListening()
         refresh()
@@ -39,45 +42,45 @@ class NopeTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        val db = NopeDatabase.get(applicationContext)
-        val appStateDao = db.appStateDao()
-        val settings = SettingsStore(applicationContext)
-        val current = runBlocking { OverrideMapper.toOverride(appStateDao.get()) }
-        val schedules = runBlocking { db.scheduleDao().observeAll().first() }
-        val now = LocalDateTime.now(ZoneId.systemDefault())
+        val loader = TileLoader.from(applicationContext)
+        scope.launch {
+            loader.toggle()
+            // Route through the reconcile loop rather than calling the enforcer
+            // directly, so the change goes through the same derived-state path
+            // as every other state change (D8).
+            runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
+            repaint(loader)
+        }
+    }
 
-        val activeBySchedule = NopeController.derive(now, schedules, Override.None)
-        val isActive = settings.isEnabled() && NopeController.derive(now, schedules, current)
-
-        val tap = TileState.onTap(isActive, current, activeBySchedule)
-        settings.setEnabled(tap.enabled)
-        runBlocking { appStateDao.upsert(OverrideMapper.toAppState(tap.override)) }
-        runCatching { AlarmScheduler.from(applicationContext).reconcileAndApply() }
-        refresh()
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 
     /** Re-derive the current state and repaint the tile to match it. */
     private fun refresh() {
         val tile = qsTile ?: return
-        val db = NopeDatabase.get(applicationContext)
-        val override = runBlocking { OverrideMapper.toOverride(db.appStateDao().get()) }
-        val schedules = runBlocking { db.scheduleDao().observeAll().first() }
-        val now = LocalDateTime.now(ZoneId.systemDefault())
-        val enabled = SettingsStore(applicationContext).isEnabled()
-        val active = enabled &&
-            NopeController.derive(now, schedules, override)
-        tile.state = when (TileState.state(active)) {
+        val loader = TileLoader.from(applicationContext)
+        scope.launch { repaint(loader) }
+    }
+
+    /** Paint the tile from a freshly derived snapshot. */
+    private suspend fun repaint(loader: TileLoader) {
+        val tile = qsTile ?: return
+        val snapshot = loader.load()
+        tile.state = when (TileState.state(snapshot.active)) {
             TileState.State.ACTIVE -> Tile.STATE_ACTIVE
             TileState.State.INACTIVE -> Tile.STATE_INACTIVE
         }
-        tile.label = getString(if (active) R.string.tile_active else R.string.tile_inactive)
+        tile.label = getString(if (snapshot.active) R.string.tile_active else R.string.tile_inactive)
         // Focus Mode's tile shows when it ends; the shade is exactly where that
         // matters, since the alternative is opening the app to find out.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle = TileState.subtitle(
-                isActive = active,
-                override = override,
-                endsAt = if (enabled) NextBoundary.next(now, schedules) else null,
+                isActive = snapshot.active,
+                override = snapshot.override,
+                endsAt = snapshot.endsAt,
             )
         }
         tile.updateTile()

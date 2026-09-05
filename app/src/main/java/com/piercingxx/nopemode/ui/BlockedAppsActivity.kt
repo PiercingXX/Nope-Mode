@@ -132,7 +132,17 @@ class BlockedAppsActivity : BrandActivity() {
             query = query,
         )
         adapter.submit(items, icons)
-        binding.emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        // T5 — say why the list is empty, honestly: "no apps to pick" and "your
+        // search matched nothing" are different situations and must read as such.
+        val emptyKind = AppPickerEmptyState.kind(installed.size, items.size)
+        binding.emptyText.visibility = if (emptyKind == null) View.GONE else View.VISIBLE
+        binding.emptyText.setText(
+            when (emptyKind) {
+                AppPickerEmptyState.Kind.NO_APPS -> R.string.blocked_apps_empty_none
+                AppPickerEmptyState.Kind.SEARCH_NO_MATCH -> R.string.blocked_apps_empty
+                null -> 0
+            }
+        )
     }
 
     private fun onRowClicked(row: AppPicker.Row) {
@@ -196,6 +206,7 @@ class BlockedAppsActivity : BrandActivity() {
                         BackgroundTheme.accentTextColor(
                             SettingsStore(context).backgroundPreset(),
                             context.getColor(com.piercingxx.nopemode.R.color.pxx_signal),
+                            SettingsStore(context).customBackground(),
                         )
                     )
                 }

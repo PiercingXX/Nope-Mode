@@ -5,6 +5,7 @@
     <string name="tier_fallback">Limited</string>
     <string name="blocked_apps_title">Blocked apps</string>
     <string name="blocked_apps_empty">No apps match.</string>
+    <string name="blocked_apps_empty_none">No apps found on this device.</string>
     <string name="blocked_apps_search_hint">Search apps</string>
     <string name="blocked_apps_confirm_block">Block anyway</string>
     <string name="schedules_title">Schedules</string>

@@ -51,6 +51,15 @@ class ThemeSyncReceiverTest {
             every { getStringExtra(ThemeSyncReceiver.EXTRA_THEME_NAME) } returns name
         }
 
+    /** A launcher theme-change intent carrying [name] and a background ARGB. */
+    private fun themeIntent(name: String?, background: Int): Intent =
+        spyk(Intent(ThemeSyncReceiver.ACTION_THEME_CHANGED)).apply {
+            every { action } returns ThemeSyncReceiver.ACTION_THEME_CHANGED
+            every { getStringExtra(ThemeSyncReceiver.EXTRA_THEME_NAME) } returns name
+            every { hasExtra(ThemeSyncReceiver.EXTRA_BACKGROUND) } returns true
+            every { getIntExtra(ThemeSyncReceiver.EXTRA_BACKGROUND, 0) } returns background
+        }
+
     // ---- resolution: display name back to preset key ----
 
     @Test
@@ -129,12 +138,36 @@ class ThemeSyncReceiverTest {
     }
 
     @Test
-    fun `a Custom theme persists nothing`() {
-        // The launcher's Custom theme has no preset here; keeping the user's
-        // current preset beats guessing.
+    fun `a Custom theme with a background persists the custom colour`() {
+        // The launcher's Custom theme has no preset here; its resolved ARGB is
+        // honoured instead, so the two apps still match on a custom choice.
+        val sink = mutableListOf<String>()
+        val colors = mutableListOf<Int>()
+        ThemeSyncReceiver(
+            persistPreset = { _, preset -> sink.add(preset) },
+            persistCustomBackground = { _, color -> colors.add(color) },
+        ).onReceive(context, themeIntent("Custom", 0xFF123456.toInt()))
+        assertTrue(sink.isEmpty())
+        assertEquals(listOf(0xFF123456.toInt()), colors)
+    }
+
+    @Test
+    fun `a Custom theme without a background persists nothing`() {
+        // No colour in the broadcast either: keep the user's current preset
+        // rather than guessing.
         val sink = mutableListOf<String>()
         receiver(sink).onReceive(context, themeIntent("Custom"))
         assertTrue(sink.isEmpty())
+    }
+
+    @Test
+    fun `an unknown name with a background persists the custom colour`() {
+        val colors = mutableListOf<Int>()
+        ThemeSyncReceiver(
+            persistPreset = { _, _ -> },
+            persistCustomBackground = { _, color -> colors.add(color) },
+        ).onReceive(context, themeIntent("Not A Real Preset", 0xFFABCDEF.toInt()))
+        assertEquals(listOf(0xFFABCDEF.toInt()), colors)
     }
 
     @Test

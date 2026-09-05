@@ -41,8 +41,20 @@ object BackgroundTheme {
         "mist" to "Mist",
     )
 
-    /** An unknown or missing preset falls back to the default rather than crashing. */
-    fun colors(preset: String?): Colors = PRESETS[preset] ?: PRESETS.getValue(DEFAULT)
+    /**
+     * An unknown or missing preset falls back to the default rather than crashing.
+     *
+     * A non-null [customBackground] (a launcher Custom theme's ARGB) wins over
+     * the named preset entirely: the ground is the custom colour and the type
+     * colour is whatever the contrast rule says is readable on it — the same
+     * derivation the presets pin, so a custom colour still gets the right text.
+     */
+    fun colors(preset: String?, customBackground: Int? = null): Colors =
+        if (customBackground != null) {
+            Colors(customBackground, contrastTextColor(customBackground))
+        } else {
+            PRESETS[preset] ?: PRESETS.getValue(DEFAULT)
+        }
 
     /**
      * Resolves a display name ("Ocean Drift") back to its preset key ("ocean").
@@ -78,8 +90,9 @@ object BackgroundTheme {
         return if (luminance > 182) 0xFF1A1A1A.toInt() else 0xFFFFFFFF.toInt()
     }
 
-    /** True when the preset is light enough to need dark system-bar icons. */
-    fun isLight(preset: String?): Boolean = contrastTextColor(colors(preset).background) != 0xFFFFFFFF.toInt()
+    /** True when the preset (or custom colour) is light enough to need dark system-bar icons. */
+    fun isLight(preset: String?, customBackground: Int? = null): Boolean =
+        contrastTextColor(colors(preset, customBackground).background) != 0xFFFFFFFF.toInt()
 
     /**
      * Body text: the preset's type colour at 90% alpha (§3.2 `text`).
@@ -90,13 +103,15 @@ object BackgroundTheme {
      * keeps the launcher's raw pair so the two apps stay pinned; the ceiling is
      * applied here instead, the same way muted and line already derive.
      */
-    fun bodyTextColor(preset: String?): Int = (colors(preset).text and 0x00FFFFFF) or 0xE6000000.toInt()
+    fun bodyTextColor(preset: String?, customBackground: Int? = null): Int =
+        (colors(preset, customBackground).text and 0x00FFFFFF) or 0xE6000000.toInt()
 
     /**
      * Secondary text: the same hue as the body colour at 50% alpha, matching
      * §3.2's "prefer opacity over new greys" on light presets as well as dark.
      */
-    fun mutedTextColor(preset: String?): Int = (colors(preset).text and 0x00FFFFFF) or 0x80000000.toInt()
+    fun mutedTextColor(preset: String?, customBackground: Int? = null): Int =
+        (colors(preset, customBackground).text and 0x00FFFFFF) or 0x80000000.toInt()
 
     /**
      * The colour for accent TEXT on a given preset.
@@ -109,9 +124,10 @@ object BackgroundTheme {
      * rule still holds there, inverted: accent is 100% Ink against body copy's
      * 90%, so it out-weighs the page the same way white does on a dark ground.
      */
-    fun accentTextColor(preset: String?, signal: Int): Int =
-        if (isLight(preset)) colors(preset).text else signal
+    fun accentTextColor(preset: String?, signal: Int, customBackground: Int? = null): Int =
+        if (isLight(preset, customBackground)) colors(preset, customBackground).text else signal
 
     /** Hairline: the body colour at 10% (§3.2 `line`). */
-    fun lineColor(preset: String?): Int = (colors(preset).text and 0x00FFFFFF) or 0x1A000000
+    fun lineColor(preset: String?, customBackground: Int? = null): Int =
+        (colors(preset, customBackground).text and 0x00FFFFFF) or 0x1A000000
 }
