@@ -1,5 +1,7 @@
 package com.piercingxx.nopemode.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
@@ -54,6 +56,7 @@ class BlockedAppsActivity : BrandActivity() {
     private var blocked: Set<String> = emptySet()
     private var icons: Map<String, Drawable> = emptyMap()
     private var query: String = ""
+    private var queryAllPackagesGranted: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +85,7 @@ class BlockedAppsActivity : BrandActivity() {
         val protections: ProtectedPackages.Protections,
         val blocked: Set<String>,
         val icons: Map<String, Drawable>,
+        val queryAllPackagesGranted: Boolean,
     )
 
     private fun load() {
@@ -92,6 +96,9 @@ class BlockedAppsActivity : BrandActivity() {
                 Loaded(
                     installed = apps.map { AppPicker.InstalledApp(it.first, it.second) },
                     protections = ProtectedPackages.discover(this@BlockedAppsActivity),
+                    queryAllPackagesGranted = checkSelfPermission(
+                        Manifest.permission.QUERY_ALL_PACKAGES,
+                    ) == PackageManager.PERMISSION_GRANTED,
                     blocked = db.blockedAppDao().observeAll().first().map { it.packageName }.toSet(),
                     // Icons are resolved once here rather than per bind: loading
                     // one hits the package manager, and doing that on every row
@@ -105,6 +112,7 @@ class BlockedAppsActivity : BrandActivity() {
             protections = loaded.protections
             blocked = loaded.blocked
             icons = loaded.icons
+            queryAllPackagesGranted = loaded.queryAllPackagesGranted
 
             // An app can become protected after it was blocked — the user
             // switching to a keyboard they had already selected, say. Drop those
@@ -134,12 +142,18 @@ class BlockedAppsActivity : BrandActivity() {
         adapter.submit(items, icons)
         // T5 — say why the list is empty, honestly: "no apps to pick" and "your
         // search matched nothing" are different situations and must read as such.
-        val emptyKind = AppPickerEmptyState.kind(installed.size, items.size)
+        val emptyKind = AppPickerEmptyState.kind(
+            installed.size,
+            items.size,
+            queryAllPackagesGranted,
+        )
         binding.emptyText.visibility = if (emptyKind == null) View.GONE else View.VISIBLE
         binding.emptyText.setText(
             when (emptyKind) {
                 AppPickerEmptyState.Kind.NO_APPS -> R.string.blocked_apps_empty_none
                 AppPickerEmptyState.Kind.SEARCH_NO_MATCH -> R.string.blocked_apps_empty
+                AppPickerEmptyState.Kind.QUERY_ALL_PACKAGES_DENIED ->
+                    R.string.blocked_apps_empty_query_denied
                 null -> 0
             }
         )

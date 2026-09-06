@@ -6,6 +6,7 @@
     <string name="blocked_apps_title">Blocked apps</string>
     <string name="blocked_apps_empty">No apps match.</string>
     <string name="blocked_apps_empty_none">No apps found on this device.</string>
+    <string name="blocked_apps_empty_query_denied">GrapheneOS may have denied QUERY_ALL_PACKAGES; the picker cannot list apps to block.</string>
     <string name="blocked_apps_search_hint">Search apps</string>
     <string name="blocked_apps_confirm_block">Block anyway</string>
     <string name="schedules_title">Schedules</string>

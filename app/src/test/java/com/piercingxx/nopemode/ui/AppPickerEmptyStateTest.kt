@@ -9,8 +9,9 @@ import org.junit.Test
  * picker (design §11).
  *
  * The rule that carries the weight: an empty list must say *why* it is empty.
- * "No apps match." is a lie on a fresh device with nothing installed; the empty
- * state must distinguish "no apps to pick" from "your search matched nothing".
+ * "No apps match." is a lie on a fresh device with nothing installed and a lie
+ * when GrapheneOS has denied QUERY_ALL_PACKAGES; the empty state must
+ * distinguish those from "your search matched nothing".
  */
 class AppPickerEmptyStateTest {
 
@@ -34,6 +35,42 @@ class AppPickerEmptyStateTest {
         assertEquals(
             AppPickerEmptyState.Kind.SEARCH_NO_MATCH,
             AppPickerEmptyState.kind(installedCount = 5, rowCount = 0),
+        )
+    }
+
+    @Test
+    fun `empty query under QUERY_ALL_PACKAGES denial is not a search miss`() {
+        assertEquals(
+            AppPickerEmptyState.Kind.QUERY_ALL_PACKAGES_DENIED,
+            AppPickerEmptyState.kind(
+                installedCount = 0,
+                rowCount = 0,
+                queryAllPackagesGranted = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `a filtered empty list stays a search miss even if QUERY_ALL_PACKAGES is denied`() {
+        assertEquals(
+            AppPickerEmptyState.Kind.SEARCH_NO_MATCH,
+            AppPickerEmptyState.kind(
+                installedCount = 5,
+                rowCount = 0,
+                queryAllPackagesGranted = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `granted QUERY_ALL_PACKAGES and no apps is still no-apps`() {
+        assertEquals(
+            AppPickerEmptyState.Kind.NO_APPS,
+            AppPickerEmptyState.kind(
+                installedCount = 0,
+                rowCount = 0,
+                queryAllPackagesGranted = true,
+            ),
         )
     }
 }
