@@ -16,6 +16,7 @@ import com.piercingxx.nopemode.data.NopeDatabase
 import com.piercingxx.nopemode.data.OverrideMapper
 import com.piercingxx.nopemode.data.SettingsStore
 import com.piercingxx.nopemode.databinding.ActivitySettingsBinding
+import com.piercingxx.nopemode.log.LogsUi
 import com.piercingxx.nopemode.schedule.AlarmScheduler
 import com.piercingxx.nopemode.service.RingerPolicy
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +60,7 @@ class SettingsActivity : BrandActivity() {
 
         buildThemeStrip()
 
+        binding.logsButton.setOnClickListener { LogsUi.show(this) }
         binding.grantDndButton.setOnClickListener {
             // The grant is a user action in system Settings — there is no API to
             // award it to ourselves, device owner or not.
