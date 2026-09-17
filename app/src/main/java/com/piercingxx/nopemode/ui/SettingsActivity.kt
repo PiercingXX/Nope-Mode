@@ -98,6 +98,11 @@ class SettingsActivity : BrandActivity() {
                 }
                 setOnClickListener {
                     SettingsStore(this@SettingsActivity).setBackgroundPreset(key)
+                    SuiteThemeClient.request(
+                        this@SettingsActivity,
+                        key,
+                        BackgroundTheme.colors(key).background,
+                    )
                     // Repaint immediately; the launcher does not restart either.
                     applyTheme()
                     buildThemeStrip()
