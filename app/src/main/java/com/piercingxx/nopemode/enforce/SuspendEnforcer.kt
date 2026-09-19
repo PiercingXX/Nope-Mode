@@ -4,6 +4,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.util.Log
+import com.piercingxx.nopemode.log.AppLog
 import com.piercingxx.nopemode.admin.NopeDeviceAdminReceiver
 import com.piercingxx.nopemode.data.SuspendRecord
 import com.piercingxx.nopemode.data.SuspendRecordDao
@@ -100,6 +101,7 @@ class SuspendEnforcer(
         if (failed.isNotEmpty()) {
             Log.w(TAG, "could not suspend: $failed")
         }
+        AppLog.i("enforce", "desired=${desired.size} failed=${failed.size}")
         return Enforcer.Result(failed)
     }
 
