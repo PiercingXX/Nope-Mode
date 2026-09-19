@@ -7,7 +7,6 @@ class NopeModeApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppLog.init(this)
-        AppLog.installCrashHandler()
-        AppLog.i("app", "start")
+        AppLog.installFieldDiagnostics(this)
     }
 }
