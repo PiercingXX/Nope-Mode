@@ -2,70 +2,44 @@
 
 > Selected apps go silent and un-openable — on a schedule, or because you said so.
 
-A cleanroom equivalent of Focus Mode, for GrapheneOS, where Digital Wellbeing
-does not exist. Pick the apps allowed to bother you; when Nope-Mode is on, the
-rest produce **no notifications, no sound, no vibration**, and **cannot be
-opened**. Turn it on by hand, from a Quick Settings tile, or let the schedule do
-it — the default is 20:00 → 08:00, daily. No accounts, no network, no analytics:
-the manifest declares no `INTERNET` permission, so there is nothing to leak and
-nothing to audit.
+Focus Mode for GrapheneOS, where Digital Wellbeing does not exist. When it is
+on, the rest produce **no notifications, no sound, no vibration**, and **cannot
+be opened**. Hand, tile, or schedule (default 20:00 → 08:00). No accounts, no
+network, no analytics. No `INTERNET` in the manifest.
 
 <img src="docs/images/screenshot.png" width="270" alt="Nope-Mode home screen on a Pixel 6 — device-owner enforcement active">
 
-**Status:** provisioned and enforcing on a Pixel 6 running GrapheneOS — device
-owner granted, notification listener and accessibility service enabled, Do Not
-Disturb policy access held. 235 unit tests, all green.
+**Provisioned and enforcing on GrapheneOS.** Quiet Ringer uses Do Not Disturb:
+starred contacts still ring. Relinquish is on Setup and releases suspended apps
+before dropping device owner.
 
-Quiet Ringer uses Do Not Disturb: starred contacts still ring; Android cannot
-restrict the ringer alone. Relinquish is on the Setup screen and releases
-suspended apps before dropping device owner. Backup export/restore is wired.
+Runs as **device owner** via `setPackagesSuspended`. Survives reboot. Without
+device owner it falls back to a notification listener plus accessibility —
+leakier. A notification may make a sound before it is suppressed.
 
-## How it works
+Device owner can be granted **only** with zero accounts and zero secondary
+profiles. First app on a fresh device, or not at all. Add a Google account
+first and the window closes. Reopening it costs a factory reset. Some banking
+and DRM apps refuse a managed device. Relinquish is always there.
 
-Nope-Mode runs as a **device owner** and calls the platform's
-`setPackagesSuspended` — the mechanism behind Focus Mode itself. A suspended app
-cannot show notifications, play audio, raise dialogs, or launch, and it survives
-reboots, which a Shizuku-based approach does not. Without device owner it falls
-back to a notification listener plus an accessibility service: that tier runs
-anywhere and is leakier — a notification may make a sound before it is
-suppressed.
-
-## Setup 🛠️
-
-Device owner can be provisioned **only** while the device has zero accounts and
-zero secondary profiles. That constraint is the whole reason Nope-Mode is the
-first app installed on a fresh device. This one was:
+```
+package: com.piercingxx.nopemode    minSdk 24
+```
 
 ```sh
 adb shell dpm set-device-owner com.piercingxx.nopemode/.admin.NopeDeviceAdminReceiver
 ```
 
-Add a Google account first and the window closes. Reopening it costs a factory
-reset. Device owner is a full MDM role and carries real tradeoffs — some banking
-and DRM apps refuse to run on a managed device. Nope-Mode always exposes
-**Relinquish device owner**, so backing out costs nothing. Read
-[design.md](design.md) before provisioning.
+Read [design.md](design.md) before provisioning.
 
-## Theme sync 🌀
-
-XX-Launcher is the sender: it broadcasts `xx.launcher.THEME_CHANGED` with a theme
-name and a background ARGB, and Nope-Mode persists the choice and repaints
-without being opened.
-
-## Build 🧪
-
-Android 7.0+ (minSdk 24), targetSdk 35.
+## Build
 
 ```sh
 ./gradlew assembleDebug
 ./gradlew testDebugUnitTest
 ```
 
-[design.md](design.md) is the spec; [todo.md](todo.md) is the remaining punch
-list.
-
 ## License
 
-Copyright (c) 2026 PiercingXX. All rights reserved. No code is derived from Hail,
-NotiFilter, DetoxDroid, or any other GPL project — Nope-Mode is a cleanroom
-implementation written against public Android API documentation.
+All rights reserved. See [LICENSE](LICENSE). Cleanroom — not derived from Hail,
+NotiFilter, DetoxDroid, or any other GPL project.
