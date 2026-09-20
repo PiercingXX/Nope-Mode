@@ -14,6 +14,12 @@ compileSdk/targetSdk 35. design.md toolchain section is stale.
 
 ---
 
+## Estate (locked 2026-09-20)
+
+Sign-in is the skippy-tel door. xx-apps on `127.0.0.1` is the user gateway; this app does not mint accounts. Hub up: reuse that session. Hub down: stored origin + token, then one-app login.
+
+User files leave the phone through **xx-drive** (the user's own tree). Suite backup (`SuiteBackupProvider` → xx-apps → skippy-tel) is the phone snapshot, not a second sync product. No per-app `:845x` in the UX.
+
 ## Locked / stop (read every session)
 
 - **NEVER uninstall** this package on a provisioned phone without
@@ -70,6 +76,15 @@ CallScreeningService whitelist finer than starred-contacts.
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
 - [x] SMOKE — the app passes its emulator smoke run
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
+
+
+## WAVE-1 — xx-apps catalog (operator 2026-09-17)
+
+Package `com.piercingxx.nopemode`. Default-on. Device-owner Focus Mode.
+xx-apps may uninstall this APK when the Skippy user is disabled. Keep
+`INTERNET` absent. Keep xx-clock out of the blocked-apps list.
+
+- [x] Nm-E1 — Package id frozen for the store seed. Theme sync stays.
 
 ## BACKUP wave (operator lock 2026-09-20)
 
