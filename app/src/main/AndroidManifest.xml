@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.piercingxx.nopemode">
 
     <!-- Scheduling. Exact alarms are required: an inexact 20:00 boundary can
          drift by minutes, which is visible and wrong for a bedtime schedule. -->

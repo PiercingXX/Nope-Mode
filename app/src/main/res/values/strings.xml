@@ -14,6 +14,9 @@
     <string name="settings_title">Settings</string>
     <string name="settings_locked_hint">Friction settings are editable only while Nope-Mode is inactive.</string>
     <string name="setup_title">Setup</string>
+    <!-- Home nav label for the Setup / status screen (design §11.5). It must
+         match the design.md screen name so the smoke design-walk can reach it. -->
+    <string name="home_setup_status">Setup / status</string>
     <string name="tile_active">Nope-Mode active</string>
     <string name="tile_inactive">Nope-Mode off</string>
     <string name="accessibility_service_description">Covers blocked apps with the Nope-Mode screen while active (fallback tier).</string>

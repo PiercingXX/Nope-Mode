@@ -148,15 +148,19 @@ class BlockedAppsActivity : BrandActivity() {
             queryAllPackagesGranted,
         )
         binding.emptyText.visibility = if (emptyKind == null) View.GONE else View.VISIBLE
-        binding.emptyText.setText(
-            when (emptyKind) {
-                AppPickerEmptyState.Kind.NO_APPS -> R.string.blocked_apps_empty_none
-                AppPickerEmptyState.Kind.SEARCH_NO_MATCH -> R.string.blocked_apps_empty
-                AppPickerEmptyState.Kind.QUERY_ALL_PACKAGES_DENIED ->
-                    R.string.blocked_apps_empty_query_denied
-                null -> 0
-            }
-        )
+        // Only touch the text when there IS a reason to show: setText(0) would
+        // throw Resources$NotFoundException on a non-empty list, where the
+        // empty state is hidden anyway.
+        if (emptyKind != null) {
+            binding.emptyText.setText(
+                when (emptyKind) {
+                    AppPickerEmptyState.Kind.NO_APPS -> R.string.blocked_apps_empty_none
+                    AppPickerEmptyState.Kind.SEARCH_NO_MATCH -> R.string.blocked_apps_empty
+                    AppPickerEmptyState.Kind.QUERY_ALL_PACKAGES_DENIED ->
+                        R.string.blocked_apps_empty_query_denied
+                }
+            )
+        }
     }
 
     private fun onRowClicked(row: AppPicker.Row) {

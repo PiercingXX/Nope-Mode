@@ -31,6 +31,39 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp" />
 
+        <!-- Design §11 navigation. These four buttons are the top-level way to
+             the other screens; they sit above the fold (no scrolling) so the
+             smoke design-walk can see and tap each one, and each label matches
+             the design.md screen name it opens. -->
+        <Button
+            android:id="@+id/blockedAppsButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/blocked_apps_title" />
+
+        <Button
+            android:id="@+id/scheduleButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/schedules_title" />
+
+        <Button
+            android:id="@+id/settingsButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_title" />
+
+        <Button
+            android:id="@+id/setupButton"
+            style="@style/Nav.Row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/home_setup_status" />
+
         <TextView
             style="@style/Text.Muted"
             android:layout_width="match_parent"
@@ -49,13 +82,6 @@
             android:text="@string/master_enabled"
             android:textColor="@color/pxx_white_90"
             android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/scheduleButton"
-            style="@style/Nav.Row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/set_a_schedule" />
 
         <Button
             android:id="@+id/turnOnNowButton"
@@ -103,36 +129,11 @@
             android:background="@color/pxx_white_10" />
 
         <Button
-            android:id="@+id/blockedAppsButton"
-            style="@style/Nav.Row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/blocked_apps_title" />
-        <View style="@style/Divider" />
-
-        <Button
-            android:id="@+id/settingsButton"
-            style="@style/Nav.Row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_title" />
-        <View style="@style/Divider" />
-
-        <Button
             android:id="@+id/backupButton"
             style="@style/Nav.Row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/backup_title" />
-        <View style="@style/Divider" />
-
-        <Button
-            android:id="@+id/setupButton"
-            style="@style/Nav.Row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/setup_title" />
-        <View style="@style/Divider" />
 
     </LinearLayout>
 
