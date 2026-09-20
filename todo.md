@@ -70,3 +70,14 @@ CallScreeningService whitelist finer than starred-contacts.
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
 - [x] SMOKE — the app passes its emulator smoke run
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
+
+## BACKUP wave (operator lock 2026-09-20)
+
+Contract: `xx-apps/docs/SUITE-BACKUP-PROVIDER.md`; server
+`skippy-tel-network/docs/SUITE-BACKUP.md`. No release of this app ships
+without its provider once the `suite-backup` library is on the estate
+Maven.
+
+- [ ] BK-1 — Ship `SuiteBackupProvider` at `${applicationId}.suite.backup` guarded by `com.piercingxx.suite.permission.BACKUP` plus the in-code signature check. Snapshot contains schedules and app lists DB, `prefs/`. Restore applies atomically then exits the process.
+  - files: app/src/main/AndroidManifest.xml, app/src/main/java/**/backup/SuiteBackupProvider.kt
+  - verify: unit test round-trips snapshot → restore on an in-memory store; xx-apps Back up now lists this app with a size
