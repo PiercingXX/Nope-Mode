@@ -68,5 +68,5 @@ CallScreeningService whitelist finer than starred-contacts.
 - [x] SMOKE-1 — Declare a launcher activity: give one Activity in AndroidManifest.xml an intent filter with MAIN action and LAUNCHER category
   - files: app/src/main/AndroidManifest.xml
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
-- [ ] SMOKE — the app passes its emulator smoke run
+- [x] SMOKE — the app passes its emulator smoke run
   - verify: python3 /home/piercingxx/.skippy/app/scripts/android_smoke.py . 2>&1 | tail -1 | grep -q 'SMOKE PASS'
