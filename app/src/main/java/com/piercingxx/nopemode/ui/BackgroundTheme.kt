@@ -1,5 +1,7 @@
 package com.piercingxx.nopemode.ui
 
+import com.piercingxx.nopemode.ResyncTokens
+
 /**
  * The named background presets (BRAND-GUIDE.md §3.3), mirroring
  * PiercingXX-Launcher's `ThemeManager` so the two apps theme identically.
@@ -19,16 +21,17 @@ object BackgroundTheme {
 
     const val DEFAULT: String = "amoled"
 
-    /** In display order, matching the launcher's preview strip. */
-    val PRESETS: Map<String, Colors> = linkedMapOf(
-        "amoled" to Colors(0xFF000000.toInt(), 0xFFFFFFFF.toInt()),
-        "graphite" to Colors(0xFF131316.toInt(), 0xFFFFFFFF.toInt()),
-        "forest" to Colors(0xFF10261B.toInt(), 0xFFFFFFFF.toInt()),
-        "ocean" to Colors(0xFF0F1C2E.toInt(), 0xFFFFFFFF.toInt()),
-        "burgundy" to Colors(0xFF2A1018.toInt(), 0xFFFFFFFF.toInt()),
-        "paper" to Colors(0xFFF3EEE2.toInt(), 0xFF1A1A1A.toInt()),
-        "mist" to Colors(0xFFE6EDF5.toInt(), 0xFF1A1A1A.toInt()),
-    )
+    /**
+     * In display order, matching the launcher's preview strip. The ground
+     * colours come from [ResyncTokens.CURRENT] — the single source of truth
+     * synced from `piercingxx-branding` — rather than a second hardcoded copy,
+     * so a palette rework upstream is applied in one place. The type colour is
+     * derived by the same contrast rule the launcher uses.
+     */
+    val PRESETS: Map<String, Colors> =
+        ResyncTokens.resyncIfOld(ResyncTokens.CURRENT).mapValues { (_, background) ->
+            Colors(background, contrastTextColor(background))
+        }
 
     /** Human labels, from the guide's evocative two-word names (§3.3). */
     val LABELS: Map<String, String> = linkedMapOf(

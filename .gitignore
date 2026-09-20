@@ -29,3 +29,6 @@ captures/
 .npm-cache/
 # Mill Go build cache — never tracked
 .gocache/
+
+# Android Gradle outputs — never tracked
+app/build/

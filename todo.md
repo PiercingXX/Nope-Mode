@@ -45,7 +45,7 @@ quiet until the next OS bump.
 
 ## N2 — Branding
 
-- [ ] Resync tokens from `piercingxx-branding` if Nope-Mode colors are
+- [x] Resync tokens from `piercingxx-branding` if Nope-Mode colors are
   still the old set. Theme receiver already holds `THEME_SYNC`.
 
 ---
